@@ -15,6 +15,7 @@ import (
 	"github.com/go-acme/lego/v4/challenge"
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"github.com/go-acme/lego/v4/lego"
+	"github.com/go-acme/lego/v4/providers/dns/duckdns"
 	"github.com/go-acme/lego/v4/providers/dns/namesilo"
 	"github.com/go-acme/lego/v4/registration"
 	"io"
@@ -298,8 +299,14 @@ func (s *Service) setupLegoClient(localData *localCertData) (*lego.Client, error
 
 func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error) {
 	switch name {
+	case "duckdns":
+		config := duckdns.NewDefaultConfig()
+		config.Token = token
+		return duckdns.NewDNSProviderConfig(config)
 	case "namesilo":
-		return namesilo.NewDNSProviderConfig(&namesilo.Config{APIKey: token})
+		config := namesilo.NewDefaultConfig()
+		config.APIKey = token
+		return namesilo.NewDNSProviderConfig(config)
 	default:
 		return nil, ErrUnsupportedDNSProvider
 	}
