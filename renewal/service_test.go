@@ -2,7 +2,6 @@ package renewal
 
 import (
 	"bytes"
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -54,7 +53,7 @@ func TestService_resolveCACertificate(t *testing.T) {
 }
 
 func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
-	fmt.Println("Running pebble")
+	log.Println("Running pebble")
 	pebbleTmp, err := os.MkdirTemp("", "pebble")
 	assert.NoError(tb, err)
 	assert.NoError(tb, os.WriteFile(filepath.Join(pebbleTmp, "pebble-config.json"), pebble.RawConfig, os.ModePerm))
@@ -73,13 +72,6 @@ func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
 	assert.NoError(tb, os.WriteFile(filepath.Join(pebbleTmp, "certs", "localhost", "cert.pem"), serverTls.GetCertPem(), os.ModePerm))
 	assert.NoError(tb, os.WriteFile(filepath.Join(pebbleTmp, "certs", "localhost", "key.pem"), serverTls.GetKeyPem(), os.ModePerm))
 
-	// hack default resolver
-	net.DefaultResolver.PreferGo = true
-	net.DefaultResolver.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
-		tb.Logf("Custom Resolver %s - %s\n", network, address)
-		return nil, fmt.Errorf("ha failed")
-	}
-
 	dnsServer := test.MakeFakeDnsProv("127.0.0.34:5053") // 127.0.0.34:53
 	dnsServer.AddRecursiveSOA("example.test.")
 	go dnsServer.Start()
@@ -91,16 +83,13 @@ func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
 	command.Dir = pebbleTmp
 
 	if command.Start() != nil {
+		log.Println("Installing pebble")
 		instCmd := exec.Command("go", "install", "github.com/letsencrypt/pebble/cmd/pebble@latest")
 		assert.NoError(tb, instCmd.Run(), "Failed to start pebble make sure it is installed... go install github.com/letsencrypt/pebble/cmd/pebble@latest")
 		assert.NoError(tb, command.Start(), "failed to start pebble again")
 	}
 
 	return serverTls, func() {
-		// unhack default resolver
-		net.DefaultResolver.PreferGo = false
-		net.DefaultResolver.Dial = nil
-
 		fmt.Println("Killing pebble")
 		if command != nil && command.Process != nil {
 			assert.NoError(tb, command.Process.Kill())
