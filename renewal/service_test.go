@@ -124,7 +124,6 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) *Service {
 	assert.NoError(t, err)
 	certRaw, err := io.ReadAll(res.Body)
 	assert.NoError(t, err)
-	fmt.Println("Cert:", string(certRaw))
 
 	certDir, err := os.MkdirTemp("", "orchid-certs")
 	keyDir, err := os.MkdirTemp("", "orchid-keys")
@@ -185,18 +184,13 @@ func TestPebbleRenewal(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			fmt.Println("Database rows")
-			fmt.Println("=============")
 			query, err := service.db.Query("SELECT cert_id, domain from certificate_domains")
 			assert.NoError(t, err)
 			for query.Next() {
 				var a uint64
 				var b string
 				assert.NoError(t, query.Scan(&a, &b))
-
-				fmt.Println(a, b)
 			}
-			fmt.Println("=============")
 
 			assert.NoError(t, service.renewalCheck())
 			certFilePath := filepath.Join(service.certDir, "1.cert.pem")
