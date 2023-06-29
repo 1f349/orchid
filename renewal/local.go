@@ -1,17 +1,16 @@
 package renewal
 
-import "time"
+import (
+	"database/sql"
+)
 
 // Contains local types for the renewal service
 type localCertData struct {
 	id  uint64
 	dns struct {
-		name  string
-		token string
+		name  sql.NullString
+		token sql.NullString
 	}
-	cert struct {
-		current  uint64
-		notAfter time.Time
-	}
-	domains []string
+	notAfter sql.NullTime
+	domains  []string
 }

@@ -7,4 +7,5 @@ type LetsEncryptConfig struct {
 	} `yaml:"account"`
 	Directory   string `yaml:"directory"`
 	Certificate string `yaml:"certificate"`
+	insecure    bool
 }
