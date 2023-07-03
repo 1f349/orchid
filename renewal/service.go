@@ -35,11 +35,20 @@ var (
 	createTableCertificates string
 )
 
+// overrides only used in testing
 var testDnsOptions interface {
 	challenge.Provider
 	GetDnsAddrs() []string
 }
 
+// Service manages the scheduled renewal of certificates stored in the database
+// and outputs the latest certificates to the certDir folder. If the certificate
+// does not have a key already defined in keyDir then a new key is generated.
+//
+// The service makes use of an HTTP ACME challenge provider, and a DNS ACME
+// challenge provider. These ensure the `.wellknown/acme-challenges` files and
+// `_acme-challenges` TXT records are updated to validate the ownership of the
+// specified domains.
 type Service struct {
 	db         *sql.DB
 	httpAcme   challenge.Provider
@@ -55,7 +64,8 @@ type Service struct {
 	insecure   bool
 }
 
-func NewRenewalService(wg *sync.WaitGroup, db *sql.DB, httpAcme challenge.Provider, leConfig LetsEncryptConfig, certDir, keyDir string) (*Service, error) {
+// NewService creates a new certificate renewal service.
+func NewService(wg *sync.WaitGroup, db *sql.DB, httpAcme challenge.Provider, leConfig LetsEncryptConfig, certDir, keyDir string) (*Service, error) {
 	r := &Service{
 		db:         db,
 		httpAcme:   httpAcme,
@@ -99,16 +109,20 @@ func NewRenewalService(wg *sync.WaitGroup, db *sql.DB, httpAcme challenge.Provid
 		return nil, fmt.Errorf("failed to resolve CA certificate: %w", err)
 	}
 
+	// start the background routine
 	wg.Add(1)
 	go r.renewalRoutine(wg)
 	return r, nil
 }
 
+// Shutdown the renewal service.
 func (s *Service) Shutdown() {
 	log.Println("[Renewal] Shutting down certificate renewal service")
 	close(s.certDone)
 }
 
+// resolveLEPrivKey resolves the private key for the LetsEncrypt account.
+// If the string is a path to a file then the contents of the file is read.
 func (s *Service) resolveLEPrivKey(a string) error {
 	key, err := x509.ParsePKCS1PrivateKey([]byte(a))
 	if err != nil {
@@ -122,6 +136,14 @@ func (s *Service) resolveLEPrivKey(a string) error {
 	return err
 }
 
+// resolveCADirectory resolves the certificate authority directory URL.
+//
+// If "production" or "prod" then the LetsEncrypt production directory is used.
+//
+// If "staging" then the LetsEncrypt staging directory is used.
+//
+// Otherwise, the string is assumed to be a value directory URL (used for testing
+// with pebble).
 func (s *Service) resolveCADirectory(dir string) {
 	switch dir {
 	case "production", "prod":
@@ -133,6 +155,12 @@ func (s *Service) resolveCADirectory(dir string) {
 	}
 }
 
+// resolveCACertificate resolves the certificate authority root certificate.
+//
+// If "default" is used then the internal library lego defaults to the
+// LetsEncrypt production root certificate.
+//
+// If "pebble" is used then the pebble certificate is used.
 func (s *Service) resolveCACertificate(cert string) error {
 	switch cert {
 	case "default":
@@ -164,27 +192,37 @@ func (s *Service) resolveCACertificate(cert string) error {
 
 var ErrAlreadyRenewing = errors.New("already renewing")
 
+// renewalRoutine is the main loop which makes used of certTicker to constantly
+// check if the existing certificates are up-to-date.
 func (s *Service) renewalRoutine(wg *sync.WaitGroup) {
+	// Upon leaving the function stop the ticker and clear the WaitGroup.
 	defer func() {
 		s.certTicker.Stop()
 		log.Println("[Renewal] Stopped certificate renewal service")
 		wg.Done()
 	}()
 
+	// Do an initial check and refuse to start if any errors occur.
 	log.Println("[Renewal] Doing quick certificate check before starting...")
 	err := s.renewalCheck()
 	if err != nil {
 		log.Println("[Renewal] Certificate check, should not error first try: ", err)
 		return
 	}
-	log.Println("[Renewal] Initial check complete, continually checking every 4 hours...")
 
+	// Logging or something
+	log.Println("[Renewal] Initial check complete, continually checking every 10 minutes...")
+
+	// Main loop
 	for {
 		select {
 		case <-s.certDone:
+			// Exit if certDone has closed
 			return
 		case <-s.certTicker.C:
+			// Start a new check in a separate routine
 			go func() {
+				// run a renewal check and log errors, but ignore ErrAlreadyRenewing
 				err := s.renewalCheck()
 				if err != nil && err != ErrAlreadyRenewing {
 					log.Println("[Renewal] Certificate check, an error occurred: ", err)
@@ -194,12 +232,15 @@ func (s *Service) renewalRoutine(wg *sync.WaitGroup) {
 	}
 }
 
+// renewalCheck runs a locked renewal check, this only returns and unlocks once a
+// renewal finishes or if no certificate needs to renew.
 func (s *Service) renewalCheck() error {
 	if !s.renewLock.TryLock() {
 		return ErrAlreadyRenewing
 	}
 	defer s.renewLock.Unlock()
 
+	// check for running out certificates in the database
 	localData, err := s.findNextCertificateToRenew()
 	if err != nil {
 		return fmt.Errorf("failed to find a certificate to renew: %w", err)
@@ -210,19 +251,35 @@ func (s *Service) renewalCheck() error {
 		return nil
 	}
 
+	// renew the certificate from the collected data
 	err = s.renewCert(localData)
 	if err != nil {
 		return err
 	}
+
+	// renew succeeded
 	log.Printf("[Renewal] Updated certificate %d successfully\n", localData.id)
 	return nil
 }
 
+// findNextCertificateToRenew finds a certificate to update
 func (s *Service) findNextCertificateToRenew() (*localCertData, error) {
 	d := &localCertData{}
 
-	row := s.db.QueryRow(findNextCertSql)
-	err := row.Scan(&d.id, &d.notAfter, &d.dns.name, &d.dns.token)
+	// sql or something, the query is in `find-next-cert.sql`
+	row, err := s.db.Query(findNextCertSql)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run query: %w", err)
+	}
+	defer row.Close()
+
+	// if next fails no rows were found
+	if !row.Next() {
+		return nil, nil
+	}
+
+	// scan the first row
+	err = row.Scan(&d.id, &d.notAfter, &d.dns.name, &d.dns.token)
 	switch err {
 	case nil:
 		// no nothing
@@ -238,11 +295,13 @@ func (s *Service) findNextCertificateToRenew() (*localCertData, error) {
 }
 
 func (s *Service) fetchDomains(localData *localCertData) ([]string, error) {
+	// more sql: this one just grabs all the domains for a certificate
 	query, err := s.db.Query(`SELECT domain FROM certificate_domains WHERE cert_id = ?`, localData.id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch domains for certificate: %d: %w", localData.id, err)
 	}
 
+	// convert query responses to a string slice
 	domains := make([]string, 0)
 	for query.Next() {
 		var domain string
@@ -252,6 +311,7 @@ func (s *Service) fetchDomains(localData *localCertData) ([]string, error) {
 		}
 		domains = append(domains, domain)
 	}
+	// if no domains were found then the renewal will fail
 	if len(domains) == 0 {
 		return nil, fmt.Errorf("no domains registered for certificate: %d", localData.id)
 	}
@@ -259,12 +319,15 @@ func (s *Service) fetchDomains(localData *localCertData) ([]string, error) {
 }
 
 func (s *Service) setupLegoClient(localData *localCertData) (*lego.Client, error) {
+	// create lego config and change the certificate authority directory URL and the
+	// http.Client transport if an alternative is provided
 	config := lego.NewConfig(s.leAccount)
 	config.CADirURL = s.caAddr
 	if s.transport != nil {
 		config.HTTPClient.Transport = s.transport
 	}
 
+	// create lego client from the config
 	client, err := lego.NewClient(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate client: %w", err)
@@ -275,6 +338,8 @@ func (s *Service) setupLegoClient(localData *localCertData) (*lego.Client, error
 
 	// if testDnsOptions is defined then set up the test provider
 	if testDnsOptions != nil {
+		// set up the dns provider used during tests and disable propagation as no dns
+		// will validate these tests
 		dnsAddrs := testDnsOptions.GetDnsAddrs()
 		log.Printf("Using testDnsOptions with DNS server: %v\n", dnsAddrs)
 		_ = client.Challenge.SetDNS01Provider(testDnsOptions, dns01.AddRecursiveNameservers(dnsAddrs), dns01.DisableCompletePropagationRequirement())
@@ -288,15 +353,19 @@ func (s *Service) setupLegoClient(localData *localCertData) (*lego.Client, error
 		_ = client.Challenge.SetDNS01Provider(dnsProv)
 	}
 
+	// make sure the LetsEncrypt account is registered
 	register, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update account registration: %w", err)
 	}
 
+	// return and use the client
 	s.leAccount.reg = register
 	return client, nil
 }
 
+// getDnsProvider loads a DNS challenge provider using the provided name and
+// token
 func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error) {
 	switch name {
 	case "duckdns":
@@ -312,6 +381,7 @@ func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error)
 	}
 }
 
+// getPrivateKey reads the private key for the specified certificate id
 func (s *Service) getPrivateKey(id uint64) (*rsa.PrivateKey, error) {
 	privKeyBytes, err := os.ReadFile(filepath.Join(s.keyDir, fmt.Sprintf("%d.key.pem", id)))
 	if err != nil {
@@ -320,20 +390,27 @@ func (s *Service) getPrivateKey(id uint64) (*rsa.PrivateKey, error) {
 	return x509.ParsePKCS1PrivateKey(privKeyBytes)
 }
 
+// renewCert sets the renewing state in the database, calls renewCertInternal,
+// updates the NotAfter/NotBefore columns in the database and writes the
+// certificate to the certDir directory.
 func (s *Service) renewCert(localData *localCertData) error {
+	// database synchronous state
 	s.setRenewing(localData.id, true, false)
 
+	// run internal renewal code and log errors
 	cert, certBytes, err := s.renewCertInternal(localData)
 	if err != nil {
 		s.setRenewing(localData.id, false, true)
 		return fmt.Errorf("failed to renew cert %d: %w", localData.id, err)
 	}
 
+	// set the NotAfter/NotBefore in the database
 	_, err = s.db.Exec(`UPDATE certificates SET renewing = 0, renew_failed = 0, not_after = ?, updated_at = ? WHERE id = ?`, cert.NotAfter, cert.NotBefore, localData.id)
 	if err != nil {
 		return fmt.Errorf("failed to update cert %d in database: %w", localData.id, err)
 	}
 
+	// write out the certificate file
 	err = s.writeCertFile(localData.id, certBytes)
 	if err != nil {
 		return fmt.Errorf("failed to write cert file: %w", err)
@@ -342,6 +419,9 @@ func (s *Service) renewCert(localData *localCertData) error {
 	return nil
 }
 
+// renewCertInternal handles each stage of fetching the certificate private key,
+// fetching the domains slice, setting up the lego client, obtaining a renewed
+// certificate, decoding and parsing the certificate.
 func (s *Service) renewCertInternal(localData *localCertData) (*x509.Certificate, []byte, error) {
 	// read private key file
 	privKey, err := s.getPrivateKey(localData.id)
@@ -387,6 +467,8 @@ func (s *Service) renewCertInternal(localData *localCertData) (*x509.Certificate
 	return parseCert, obtain.Certificate, nil
 }
 
+// setRenewing sets the renewing and failed states in the database for a
+// specified certifcate id.
 func (s *Service) setRenewing(id uint64, renewing, failed bool) {
 	_, err := s.db.Exec("UPDATE certificates SET renewing = ?, renew_failed = ? WHERE id = ?", renewing, failed, id)
 	if err != nil {
@@ -394,6 +476,8 @@ func (s *Service) setRenewing(id uint64, renewing, failed bool) {
 	}
 }
 
+// writeCertFile writes the output certificate file and renames the current one
+// to include `-old` in the name.
 func (s *Service) writeCertFile(id uint64, certBytes []byte) error {
 	oldPath := filepath.Join(s.certDir, fmt.Sprintf("%d-old.cert.pem", id))
 	newPath := filepath.Join(s.certDir, fmt.Sprintf("%d.cert.pem", id))

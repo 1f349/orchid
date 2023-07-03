@@ -121,7 +121,7 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) *Service {
 	assert.NoError(t, err)
 
 	acmeProv := test.MakeFakeAcmeProv(serverTls.GetCertPem())
-	service, err := NewRenewalService(wg, db, acmeProv, LetsEncryptConfig{
+	service, err := NewService(wg, db, acmeProv, LetsEncryptConfig{
 		Account: struct {
 			Email      string `yaml:"email"`
 			PrivateKey string `yaml:"privateKey"`
@@ -144,6 +144,9 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) *Service {
 }
 
 func TestPebbleRenewal(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping renewal tests in short mode")
+	}
 	serverTls, cancel := setupPebbleSuite(t)
 	t.Cleanup(cancel)
 

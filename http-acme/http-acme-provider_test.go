@@ -16,6 +16,19 @@ import (
 	"time"
 )
 
+func makeQuickHttpProv(accessToken string, ft http.RoundTripper) *HttpAcmeProvider {
+	return &HttpAcmeProvider{
+		accessToken,
+		"",
+		"https://api.example.com/acme/present/%domain%/%token%/%content%",
+		"https://api.example.com/acme/clean/%domain%/%token%",
+		"https://api.example.com/acme/token",
+		ft,
+	}
+}
+
+// fakeTransport captures any requests and responds with a successful answer if
+// applicable
 type fakeTransport struct {
 	verify mjwt.Verifier
 	req    *http.Request
@@ -23,6 +36,7 @@ type fakeTransport struct {
 }
 
 func (f *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	// check bearer token and extract claims
 	bearer := req.Header.Get("Authorization")
 	if !strings.HasPrefix(bearer, "Bearer ") {
 		return nil, fmt.Errorf("invalid bearer token")
@@ -59,13 +73,7 @@ func TestHttpAcmeProvider_Present(t *testing.T) {
 	assert.NoError(t, err)
 
 	ft := &fakeTransport{verify: signer}
-	prov := &HttpAcmeProvider{
-		accessToken,
-		"",
-		"https://api.example.com/acme/present/%domain%/%token%/%content%",
-		"https://api.example.com/acme/clean/%domain%/%token%",
-		ft,
-	}
+	prov := makeQuickHttpProv(accessToken, ft)
 	assert.NoError(t, prov.Present("example.com", "1234", "1234abcd"))
 	assert.Equal(t, *ft.req.URL, url.URL{
 		Scheme: "https",
@@ -88,13 +96,7 @@ func TestHttpAcmeProvider_CleanUp(t *testing.T) {
 	assert.NoError(t, err)
 
 	ft := &fakeTransport{verify: signer, clean: true}
-	prov := &HttpAcmeProvider{
-		accessToken,
-		"",
-		"https://api.example.com/acme/present/%domain%/%token%/%content%",
-		"https://api.example.com/acme/clean/%domain%/%token%",
-		ft,
-	}
+	prov := makeQuickHttpProv(accessToken, ft)
 	assert.NoError(t, prov.CleanUp("example.com", "1234", "1234abcd"))
 	assert.Equal(t, *ft.req.URL, url.URL{
 		Scheme: "https",
