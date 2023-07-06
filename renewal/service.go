@@ -126,11 +126,11 @@ func (s *Service) Shutdown() {
 func (s *Service) resolveLEPrivKey(a string) error {
 	key, err := x509.ParsePKCS1PrivateKey([]byte(a))
 	if err != nil {
-		bytes, err := os.ReadFile(a)
+		raw, err := os.ReadFile(a)
 		if err != nil {
 			return err
 		}
-		key, err = x509.ParsePKCS1PrivateKey(bytes)
+		key, err = x509.ParsePKCS1PrivateKey(raw)
 	}
 	s.leAccount.key = key
 	return err

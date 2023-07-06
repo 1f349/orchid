@@ -2,13 +2,23 @@ package main
 
 import (
 	"context"
-	"crypto/x509"
+	"database/sql"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"github.com/MrMelon54/mjwt"
+	httpAcme "github.com/MrMelon54/orchid/http-acme"
+	"github.com/MrMelon54/orchid/renewal"
+	"github.com/MrMelon54/orchid/servers"
+	"github.com/MrMelon54/violet/utils"
 	"github.com/google/subcommands"
 	"log"
 	"os"
+	"os/signal"
+	"path/filepath"
+	"sync"
+	"syscall"
+	"time"
 )
 
 type serveCmd struct{ configPath string }
@@ -49,15 +59,50 @@ func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 		return subcommands.ExitFailure
 	}
 
-	normalLoad(conf)
+	wd := filepath.Dir(s.configPath)
+	normalLoad(conf, wd)
 	return subcommands.ExitSuccess
 }
 
-func normalLoad(conf startUpConfig) {
-	os.ReadFile()
-	x509.ParsePKCS1PrivateKey()
-	mjwtVerify, err := mjwt.NewMJwtVerifierFromFile(conf.PubKey)
+func normalLoad(conf startUpConfig, wd string) {
+	// load the MJWT RSA public key from a pem encoded file
+	mJwtVerify, err := mjwt.NewMJwtVerifierFromFile(filepath.Join(wd, "signer.public.pem"))
 	if err != nil {
-
+		log.Fatalf("[Orchid] Failed to load MJWT verifier public key from file '%s': %s", filepath.Join(wd, "signer.public.pem"), err)
 	}
+
+	// open sqlite database
+	db, err := sql.Open("sqlite3", filepath.Join(wd, "orchid.db.sqlite"))
+	if err != nil {
+		log.Fatal("[Orchid] Failed to open database")
+	}
+
+	certDir := filepath.Join(wd, "certs")
+	keyDir := filepath.Join(wd, "keys")
+
+	wg := &sync.WaitGroup{}
+	acmeProv := httpAcme.NewHttpAcmeProvider(conf.Acme.Access, conf.Acme.Refresh, conf.Acme.PresentUrl, conf.Acme.CleanUpUrl, conf.Acme.RefreshUrl)
+	renewalService, err := renewal.NewService(wg, db, acmeProv, conf.LE, certDir, keyDir)
+	if err != nil {
+		log.Fatal("[Orchid] Error:", err)
+	}
+	srv := servers.NewApiServer(conf.Listen, mJwtVerify, conf.Domains)
+	utils.RunBackgroundHttp("API", srv)
+
+	// Wait for exit signal
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+	fmt.Println()
+
+	// Stop servers
+	log.Printf("[Orchid] Stopping...")
+	n := time.Now()
+
+	// stop renewal service and api server
+	renewalService.Shutdown()
+	srv.Close()
+
+	log.Printf("[Orchid] Took '%s' to shutdown\n", time.Now().Sub(n))
+	log.Println("[Orchid] Goodbye")
 }
