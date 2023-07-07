@@ -57,7 +57,7 @@ func (s *setupCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 
 	var answers struct {
 		ApiListen      string
-		FirstDomains   string
+		ApiDomains     string
 		AcmeRefresh    string
 		AcmePresentUrl string
 		AcmeCleanUpUrl string
@@ -154,7 +154,7 @@ func (s *setupCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 			Directory:   "production",
 			Certificate: "default",
 		},
-		Domains: strings.Split(answers.FirstDomains, ","),
+		Domains: strings.Split(answers.ApiDomains, ","),
 	})
 	if err != nil {
 		fmt.Println("[Orchid] Failed to write config file: ", err)
