@@ -124,14 +124,14 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) *Service {
 	service, err := NewService(wg, db, acmeProv, LetsEncryptConfig{
 		Account: LetsEncryptAccount{
 			Email:      "webmaster@example.test",
-			PrivateKey: string(x509.MarshalPKCS1PrivateKey(lePrivKey)),
+			PrivateKey: string(pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(lePrivKey)})),
 		},
 		Directory:   "https://localhost:14000/dir",
 		Certificate: string(certRaw),
 		insecure:    true,
 	}, certDir, keyDir)
-	service.transport = acmeProv
 	assert.NoError(t, err)
+	service.transport = acmeProv
 
 	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	assert.NoError(t, err)
