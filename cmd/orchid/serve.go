@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/MrMelon54/mjwt"
@@ -12,6 +11,8 @@ import (
 	"github.com/MrMelon54/orchid/servers"
 	"github.com/MrMelon54/violet/utils"
 	"github.com/google/subcommands"
+	_ "github.com/mattn/go-sqlite3"
+	"gopkg.in/yaml.v3"
 	"log"
 	"os"
 	"os/signal"
@@ -53,7 +54,7 @@ func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 	}
 
 	var conf startUpConfig
-	err = json.NewDecoder(openConf).Decode(&conf)
+	err = yaml.NewDecoder(openConf).Decode(&conf)
 	if err != nil {
 		log.Println("[Orchid] Error: invalid config file: ", err)
 		return subcommands.ExitFailure
@@ -74,14 +75,14 @@ func normalLoad(conf startUpConfig, wd string) {
 	// open sqlite database
 	db, err := sql.Open("sqlite3", filepath.Join(wd, "orchid.db.sqlite"))
 	if err != nil {
-		log.Fatal("[Orchid] Failed to open database")
+		log.Fatal("[Orchid] Failed to open database:", err)
 	}
 
 	certDir := filepath.Join(wd, "certs")
 	keyDir := filepath.Join(wd, "keys")
 
 	wg := &sync.WaitGroup{}
-	acmeProv := httpAcme.NewHttpAcmeProvider(conf.Acme.Access, conf.Acme.Refresh, conf.Acme.PresentUrl, conf.Acme.CleanUpUrl, conf.Acme.RefreshUrl)
+	acmeProv, _ := httpAcme.NewHttpAcmeProvider(filepath.Join(wd, "tokens.json"), conf.Acme.PresentUrl, conf.Acme.CleanUpUrl, conf.Acme.RefreshUrl)
 	renewalService, err := renewal.NewService(wg, db, acmeProv, conf.LE, certDir, keyDir)
 	if err != nil {
 		log.Fatal("[Orchid] Error:", err)

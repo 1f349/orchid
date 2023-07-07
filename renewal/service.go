@@ -124,13 +124,16 @@ func (s *Service) Shutdown() {
 // resolveLEPrivKey resolves the private key for the LetsEncrypt account.
 // If the string is a path to a file then the contents of the file is read.
 func (s *Service) resolveLEPrivKey(a string) error {
-	key, err := x509.ParsePKCS1PrivateKey([]byte(a))
+	p, _ := pem.Decode([]byte(a))
+	if p == nil {
+		return fmt.Errorf("failed to parse pem encoding")
+	}
+	if p.Type != "RSA PRIVATE KEY" {
+		return fmt.Errorf("invalid key types: %s", p.Type)
+	}
+	key, err := x509.ParsePKCS1PrivateKey(p.Bytes)
 	if err != nil {
-		raw, err := os.ReadFile(a)
-		if err != nil {
-			return err
-		}
-		key, err = x509.ParsePKCS1PrivateKey(raw)
+		return fmt.Errorf("failed to parse key: %w", err)
 	}
 	s.leAccount.key = key
 	return err

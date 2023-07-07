@@ -18,10 +18,11 @@ import (
 
 func makeQuickHttpProv(accessToken string, ft http.RoundTripper) *HttpAcmeProvider {
 	return &HttpAcmeProvider{
+		"",
 		accessToken,
 		"",
-		"https://api.example.com/acme/present/%domain%/%token%/%content%",
-		"https://api.example.com/acme/clean/%domain%/%token%",
+		"https://api.example.com/acme/present/$domain/$token/$content",
+		"https://api.example.com/acme/clean/$domain/$token",
 		"https://api.example.com/acme/token",
 		ft,
 	}

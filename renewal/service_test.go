@@ -122,10 +122,7 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) *Service {
 
 	acmeProv := test.MakeFakeAcmeProv(serverTls.GetCertPem())
 	service, err := NewService(wg, db, acmeProv, LetsEncryptConfig{
-		Account: struct {
-			Email      string `yaml:"email"`
-			PrivateKey string `yaml:"privateKey"`
-		}{
+		Account: LetsEncryptAccount{
 			Email:      "webmaster@example.test",
 			PrivateKey: string(x509.MarshalPKCS1PrivateKey(lePrivKey)),
 		},

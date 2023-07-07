@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-acme/lego/v4/challenge"
+	"gopkg.in/yaml.v3"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -13,16 +16,34 @@ var _ challenge.Provider = &HttpAcmeProvider{}
 // HttpAcmeProvider sends HTTP requests to an API updating the outputted
 // `.wellknown/acme-challenges` data
 type HttpAcmeProvider struct {
+	tokenFile                    string
 	accessToken, refreshToken    string
 	apiUrlPresent, apiUrlCleanUp string
 	apiUrlRefreshToken           string
 	trip                         http.RoundTripper
 }
 
+type AcmeLogin struct {
+	Access  string `yaml:"access"`
+	Refresh string `yaml:"refresh"`
+}
+
 // NewHttpAcmeProvider creates a new HttpAcmeProvider using http.DefaultTransport
 // as the transport
-func NewHttpAcmeProvider(accessToken, refreshToken, apiUrlPresent, apiUrlCleanUp, apiUrlRefreshToken string) *HttpAcmeProvider {
-	return &HttpAcmeProvider{accessToken, refreshToken, apiUrlPresent, apiUrlCleanUp, apiUrlRefreshToken, http.DefaultTransport}
+func NewHttpAcmeProvider(tokenFile, apiUrlPresent, apiUrlCleanUp, apiUrlRefreshToken string) (*HttpAcmeProvider, error) {
+	// acme login token
+	openTokens, err := os.Open(tokenFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load acme tokens: %w", err)
+	}
+
+	var acmeLogins AcmeLogin
+	err = yaml.NewDecoder(openTokens).Decode(&acmeLogins)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load acme tokens: %w", err)
+	}
+
+	return &HttpAcmeProvider{tokenFile, acmeLogins.Access, acmeLogins.Refresh, apiUrlPresent, apiUrlCleanUp, apiUrlRefreshToken, http.DefaultTransport}, nil
 }
 
 // Present implements challenge.Provider and sends a put request to the specified
@@ -93,6 +114,8 @@ func (h *HttpAcmeProvider) authCheckRequest(method, url, domain, token, keyAuth 
 		h.accessToken = tokens.Access
 		h.refreshToken = tokens.Refresh
 
+		go h.saveLoginTokens()
+
 		// call internal request again
 		resp, err = h.internalRequest(method, url, domain, token, keyAuth)
 		if err != nil {
@@ -110,11 +133,25 @@ func (h *HttpAcmeProvider) authCheckRequest(method, url, domain, token, keyAuth 
 
 // internalRequest sends a request to the acme challenge hosting api
 func (h *HttpAcmeProvider) internalRequest(method, url, domain, token, keyAuth string) (*http.Response, error) {
-	v := strings.NewReplacer("%domain%", domain, "%token%", token, "%content%", keyAuth).Replace(url)
+	v := strings.NewReplacer("$domain", domain, "$token", token, "$content", keyAuth).Replace(url)
 	req, err := http.NewRequest(method, v, nil)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+h.accessToken)
 	return h.trip.RoundTrip(req)
+}
+
+func (h *HttpAcmeProvider) saveLoginTokens() {
+	// acme login token
+	openTokens, err := os.Create(h.tokenFile)
+	if err != nil {
+		log.Println("[Orchid] Failed to open token file:", err)
+	}
+	defer openTokens.Close()
+
+	err = yaml.NewEncoder(openTokens).Encode(AcmeLogin{Access: h.accessToken, Refresh: h.refreshToken})
+	if err != nil {
+		log.Println("[Orchid] Failed to write tokens file:", err)
+	}
 }
