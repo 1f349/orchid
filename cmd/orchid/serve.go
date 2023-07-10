@@ -87,7 +87,7 @@ func normalLoad(conf startUpConfig, wd string) {
 	if err != nil {
 		log.Fatal("[Orchid] Error:", err)
 	}
-	srv := servers.NewApiServer(conf.Listen, mJwtVerify, conf.Domains)
+	srv := servers.NewApiServer(conf.Listen, db, mJwtVerify, conf.Domains)
 	utils.RunBackgroundHttp("API", srv)
 
 	// Wait for exit signal

@@ -35,6 +35,12 @@ var (
 	createTableCertificates string
 )
 
+const (
+	DomainStateNormal  = 0
+	DomainStateAdded   = 1
+	DomainStateRemoved = 2
+)
+
 // overrides only used in testing
 var testDnsOptions interface {
 	challenge.Provider
@@ -282,7 +288,7 @@ func (s *Service) findNextCertificateToRenew() (*localCertData, error) {
 	}
 
 	// scan the first row
-	err = row.Scan(&d.id, &d.notAfter, &d.dns.name, &d.dns.token)
+	err = row.Scan(&d.id, &d.notAfter, &d.dns.name, &d.dns.token, &d.tempParent)
 	switch err {
 	case nil:
 		// no nothing
@@ -299,7 +305,7 @@ func (s *Service) findNextCertificateToRenew() (*localCertData, error) {
 
 func (s *Service) fetchDomains(localData *localCertData) ([]string, error) {
 	// more sql: this one just grabs all the domains for a certificate
-	query, err := s.db.Query(`SELECT domain FROM certificate_domains WHERE cert_id = ?`, localData.id)
+	query, err := s.db.Query(`SELECT domain FROM certificate_domains WHERE cert_id = ?`, resolveTempParent(localData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch domains for certificate: %d: %w", localData.id, err)
 	}
@@ -343,9 +349,9 @@ func (s *Service) setupLegoClient(localData *localCertData) (*lego.Client, error
 	if testDnsOptions != nil {
 		// set up the dns provider used during tests and disable propagation as no dns
 		// will validate these tests
-		dnsAddrs := testDnsOptions.GetDnsAddrs()
-		log.Printf("Using testDnsOptions with DNS server: %v\n", dnsAddrs)
-		_ = client.Challenge.SetDNS01Provider(testDnsOptions, dns01.AddRecursiveNameservers(dnsAddrs), dns01.DisableCompletePropagationRequirement())
+		dnsAddr := testDnsOptions.GetDnsAddrs()
+		log.Printf("Using testDnsOptions with DNS server: %v\n", dnsAddr)
+		_ = client.Challenge.SetDNS01Provider(testDnsOptions, dns01.AddRecursiveNameservers(dnsAddr), dns01.DisableCompletePropagationRequirement())
 	} else if localData.dns.name.Valid && localData.dns.token.Valid {
 		// if the dns name and token are "valid" meaning non-null in this case
 		// set up the specific dns provider requested
@@ -411,6 +417,12 @@ func (s *Service) renewCert(localData *localCertData) error {
 	_, err = s.db.Exec(`UPDATE certificates SET renewing = 0, renew_failed = 0, not_after = ?, updated_at = ? WHERE id = ?`, cert.NotAfter, cert.NotBefore, localData.id)
 	if err != nil {
 		return fmt.Errorf("failed to update cert %d in database: %w", localData.id, err)
+	}
+
+	// set domains to normal state
+	_, err = s.db.Exec(`UPDATE certificate_domains SET state = ? WHERE cert_id = ?`, DomainStateNormal, localData.id)
+	if err != nil {
+		return fmt.Errorf("failed to update domains for %d in database: %w", localData.id, err)
 	}
 
 	// write out the certificate file
@@ -505,4 +517,11 @@ func (s *Service) writeCertFile(id uint64, certBytes []byte) error {
 	}
 
 	return nil
+}
+
+func resolveTempParent(local *localCertData) uint64 {
+	if local.tempParent > 0 {
+		return local.tempParent
+	}
+	return local.id
 }

@@ -5,8 +5,8 @@ package pebble
 import _ "embed"
 
 var (
-	//go:embed asset/pebble-cert.pem
+	//go:embed pebble-cert.pem
 	RawCert []byte
-	//go:embed asset/pebble-config.json
+	//go:embed pebble-config.json
 	RawConfig []byte
 )
