@@ -55,7 +55,7 @@ func checkAuthWithPerm(verify mjwt.Verifier, perm string, cb AuthCallback) httpr
 func checkAuthForCertificate(verify mjwt.Verifier, perm string, db *sql.DB, cb CertAuthCallback) httprouter.Handle {
 	return checkAuthWithPerm(verify, perm, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
 		// lookup certificate owner
-		id, err := checkCertOwner(db, "", b)
+		id, err := checkCertOwner(db, params.ByName("id"), b)
 		if err != nil {
 			apiError(rw, http.StatusInsufficientStorage, "Database error")
 			return
