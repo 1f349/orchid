@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -194,6 +195,8 @@ func TestPebbleRenewal(t *testing.T) {
 			assert.Equal(t, "CERTIFICATE", p.Type)
 			outCert, err := x509.ParseCertificate(p.Bytes)
 			assert.NoError(t, err)
+			sort.Strings(i.domains)
+			sort.Strings(outCert.DNSNames)
 			assert.Equal(t, i.domains, outCert.DNSNames)
 		})
 	}

@@ -1,6 +1,6 @@
-select cert.id, cert.not_after, dns.type, dns.token, cert.temp_parent
+select cert.id, cert.not_after, dns_acme.type, dns_acme.token, cert.temp_parent
 from certificates as cert
-         left outer join dns on cert.dns = dns.id
+         left outer join dns_acme on cert.dns = dns_acme.id
 where cert.active = 1
   and (cert.auto_renew = 1 or cert.not_after IS NULL)
   and cert.renewing = 0
