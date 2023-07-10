@@ -6,6 +6,7 @@ import (
 	"github.com/MrMelon54/mjwt/auth"
 	vUtils "github.com/MrMelon54/violet/utils"
 	"github.com/julienschmidt/httprouter"
+	"log"
 	"net/http"
 )
 
@@ -57,7 +58,12 @@ func checkAuthForCertificate(verify mjwt.Verifier, perm string, db *sql.DB, cb C
 		// lookup certificate owner
 		id, err := checkCertOwner(db, params.ByName("id"), b)
 		if err != nil {
+			if err.Error() == "not the certificate owner" {
+				apiError(rw, http.StatusBadRequest, "Not the certificate owner")
+				return
+			}
 			apiError(rw, http.StatusInsufficientStorage, "Database error")
+			log.Println("[API] Failed to find certificate owner: ", err)
 			return
 		}
 
