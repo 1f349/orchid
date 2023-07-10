@@ -88,7 +88,8 @@ func normalLoad(conf startUpConfig, wd string) {
 		log.Fatal("[Orchid] Error:", err)
 	}
 	srv := servers.NewApiServer(conf.Listen, db, mJwtVerify, conf.Domains)
-	utils.RunBackgroundHttp("API", srv)
+	log.Printf("[API] Starting API server on: '%s'\n", srv.Addr)
+	go utils.RunBackgroundHttp("API", srv)
 
 	// Wait for exit signal
 	sc := make(chan os.Signal, 1)
