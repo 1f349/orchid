@@ -392,11 +392,15 @@ func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error)
 
 // getPrivateKey reads the private key for the specified certificate id
 func (s *Service) getPrivateKey(id uint64) (*rsa.PrivateKey, error) {
-	privKeyBytes, err := os.ReadFile(filepath.Join(s.keyDir, fmt.Sprintf("%d.key.pem", id)))
+	pemBytes, err := os.ReadFile(filepath.Join(s.keyDir, fmt.Sprintf("%d.key.pem", id)))
 	if err != nil {
 		return nil, err
 	}
-	return x509.ParsePKCS1PrivateKey(privKeyBytes)
+	keyBlock, _ := pem.Decode(pemBytes)
+	if keyBlock.Type != "RSA PRIVATE KEY" {
+		return nil, fmt.Errorf("invalid pem block type")
+	}
+	return x509.ParsePKCS1PrivateKey(keyBlock.Bytes)
 }
 
 // renewCert sets the renewing state in the database, calls renewCertInternal,
