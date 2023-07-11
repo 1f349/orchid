@@ -20,6 +20,7 @@ import (
 	"github.com/go-acme/lego/v4/registration"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -390,13 +391,29 @@ func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error)
 	}
 }
 
-// getPrivateKey reads the private key for the specified certificate id
+// getPrivateKey reads the private key for the specified certificate id, or
+// generates one is the file doesn't exist
 func (s *Service) getPrivateKey(id uint64) (*rsa.PrivateKey, error) {
-	pemBytes, err := os.ReadFile(filepath.Join(s.keyDir, fmt.Sprintf("%d.key.pem", id)))
+	fPath := filepath.Join(s.keyDir, fmt.Sprintf("%d.key.pem", id))
+	pemBytes, err := os.ReadFile(fPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			key, err := rsa.GenerateKey(rand.New(rand.NewSource(time.Now().UnixNano())), 4096)
+			if err != nil {
+				return nil, fmt.Errorf("generate rsa key error: %w", err)
+			}
+			err = os.WriteFile(fPath, pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)}), os.ModePerm)
+			if err != nil {
+				return nil, fmt.Errorf("failed to save rsa key: %w", err)
+			}
+			return key, nil
+		}
 		return nil, err
 	}
 	keyBlock, _ := pem.Decode(pemBytes)
+	if keyBlock == nil {
+		return nil, fmt.Errorf("invalid pem block: failed to parse")
+	}
 	if keyBlock.Type != "RSA PRIVATE KEY" {
 		return nil, fmt.Errorf("invalid pem block type")
 	}

@@ -55,7 +55,7 @@ func (f *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, fmt.Errorf("missing perm 'test:acme:clean'")
 	}
 	rec := httptest.NewRecorder()
-	rec.WriteHeader(http.StatusOK)
+	rec.WriteHeader(http.StatusAccepted)
 	f.req = req
 	return rec.Result(), nil
 }

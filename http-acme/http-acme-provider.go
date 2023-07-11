@@ -55,7 +55,7 @@ func (h *HttpAcmeProvider) Present(domain, token, keyAuth string) error {
 		return err
 	}
 	if trip.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("Trip response status code was not 200")
+		return fmt.Errorf("trip response status code was not 202")
 	}
 	return nil
 }
@@ -69,7 +69,7 @@ func (h *HttpAcmeProvider) CleanUp(domain, token, keyAuth string) error {
 		return err
 	}
 	if trip.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("Trip response status code was not 200")
+		return fmt.Errorf("trip response status code was not 202")
 	}
 	return nil
 }
@@ -83,7 +83,7 @@ func (h *HttpAcmeProvider) authCheckRequest(method, url, domain, token, keyAuth 
 		return nil, err
 	}
 	switch resp.StatusCode {
-	case http.StatusOK:
+	case http.StatusAccepted:
 		// just return
 		return resp, nil
 	case http.StatusForbidden:
@@ -99,8 +99,8 @@ func (h *HttpAcmeProvider) authCheckRequest(method, url, domain, token, keyAuth 
 		if err != nil {
 			return nil, fmt.Errorf("refresh token request failed: %w", err)
 		}
-		if trip.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("refresh token request failed: due to invalid status code, expected 200 got %d", trip.StatusCode)
+		if trip.StatusCode != http.StatusAccepted {
+			return nil, fmt.Errorf("refresh token request failed: due to invalid status code, expected 202 got %d", trip.StatusCode)
 		}
 
 		// parse tokens from response body
@@ -125,10 +125,10 @@ func (h *HttpAcmeProvider) authCheckRequest(method, url, domain, token, keyAuth 
 			// just return
 			return resp, nil
 		}
-		return nil, fmt.Errorf("invalid status code, expected 200 got %d", resp.StatusCode)
+		return nil, fmt.Errorf("invalid status code, expected 202 got %d", resp.StatusCode)
 	}
 	// first request had an invalid status code
-	return nil, fmt.Errorf("invalid status code, expected 200/403 got %d", resp.StatusCode)
+	return nil, fmt.Errorf("invalid status code, expected 202/403 got %d", resp.StatusCode)
 }
 
 // internalRequest sends a request to the acme challenge hosting api
