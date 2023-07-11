@@ -54,7 +54,7 @@ func (h *HttpAcmeProvider) Present(domain, token, keyAuth string) error {
 	if err != nil {
 		return err
 	}
-	if trip.StatusCode != http.StatusOK {
+	if trip.StatusCode != http.StatusAccepted {
 		return fmt.Errorf("Trip response status code was not 200")
 	}
 	return nil
@@ -68,7 +68,7 @@ func (h *HttpAcmeProvider) CleanUp(domain, token, keyAuth string) error {
 	if err != nil {
 		return err
 	}
-	if trip.StatusCode != http.StatusOK {
+	if trip.StatusCode != http.StatusAccepted {
 		return fmt.Errorf("Trip response status code was not 200")
 	}
 	return nil
@@ -121,7 +121,7 @@ func (h *HttpAcmeProvider) authCheckRequest(method, url, domain, token, keyAuth 
 		if err != nil {
 			return nil, err
 		}
-		if resp.StatusCode == http.StatusOK {
+		if resp.StatusCode == http.StatusAccepted {
 			// just return
 			return resp, nil
 		}
