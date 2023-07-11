@@ -83,9 +83,12 @@ func normalLoad(conf startUpConfig, wd string) {
 
 	wg := &sync.WaitGroup{}
 	acmeProv, _ := httpAcme.NewHttpAcmeProvider(filepath.Join(wd, "tokens.json"), conf.Acme.PresentUrl, conf.Acme.CleanUpUrl, conf.Acme.RefreshUrl)
+	if err != nil {
+		log.Fatal("[Orchid] HTTP Acme Error:", err)
+	}
 	renewalService, err := renewal.NewService(wg, db, acmeProv, conf.LE, certDir, keyDir)
 	if err != nil {
-		log.Fatal("[Orchid] Error:", err)
+		log.Fatal("[Orchid] Service Error:", err)
 	}
 	srv := servers.NewApiServer(conf.Listen, db, mJwtVerify, conf.Domains)
 	log.Printf("[API] Starting API server on: '%s'\n", srv.Addr)
