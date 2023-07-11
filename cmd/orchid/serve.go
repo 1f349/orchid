@@ -82,7 +82,7 @@ func normalLoad(conf startUpConfig, wd string) {
 	keyDir := filepath.Join(wd, "keys")
 
 	wg := &sync.WaitGroup{}
-	acmeProv, _ := httpAcme.NewHttpAcmeProvider(filepath.Join(wd, "tokens.json"), conf.Acme.PresentUrl, conf.Acme.CleanUpUrl, conf.Acme.RefreshUrl)
+	acmeProv, err := httpAcme.NewHttpAcmeProvider(filepath.Join(wd, "tokens.yml"), conf.Acme.PresentUrl, conf.Acme.CleanUpUrl, conf.Acme.RefreshUrl)
 	if err != nil {
 		log.Fatal("[Orchid] HTTP Acme Error:", err)
 	}
