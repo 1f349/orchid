@@ -46,11 +46,6 @@ func certDomainManagePUTandDELETE(db *sql.DB, signer mjwt.Verifier, domains util
 		// check request type
 		isAdd := req.Method == http.MethodPut
 
-		if len(b.Audience) == 0 {
-			apiError(rw, http.StatusForbidden, "Missing audience tag, to specify owned domains")
-			return
-		}
-
 		// read domains from request body
 		var d []string
 		if json.NewDecoder(req.Body).Decode(&d) != nil {
@@ -60,7 +55,7 @@ func certDomainManagePUTandDELETE(db *sql.DB, signer mjwt.Verifier, domains util
 
 		// validate all domains
 		for _, i := range d {
-			if !validateDomainAudienceClaims(i, b.Audience) {
+			if !validateDomainOwnershipClaims(i, b.Claims.Perms) {
 				apiError(rw, http.StatusBadRequest, "Token cannot modify a specified domain")
 				return
 			}

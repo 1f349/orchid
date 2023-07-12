@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MrMelon54/mjwt"
+	"github.com/MrMelon54/mjwt/claims"
 	oUtils "github.com/MrMelon54/orchid/utils"
 	vUtils "github.com/MrMelon54/violet/utils"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"strconv"
@@ -53,8 +53,8 @@ func NewApiServer(listen string, db *sql.DB, signer mjwt.Verifier, domains oUtil
 	}))
 
 	// Endpoint for adding/removing domains to/from a certificate
-	manageGet, managePutDelete := certDomainManageGET(db, signer), certDomainManagePUTandDELETE(db, signer, domains)
-	r.GET("/cert/:id/domains", manageGet)
+	managePutDelete := certDomainManagePUTandDELETE(db, signer, domains)
+	r.GET("/cert/:id/domains", certDomainManageGET(db, signer))
 	r.PUT("/cert/:id/domains", managePutDelete)
 	r.DELETE("/cert/:id/domains", managePutDelete)
 
@@ -164,14 +164,12 @@ func safeTransaction(rw http.ResponseWriter, db *sql.DB, cb func(rw http.Respons
 	return nil
 }
 
-// validateDomainAudienceClaims validates if the audience claims contain the
+// validateDomainOwnershipClaims validates if the claims contain the
 // `owns=<fqdn>` field with the matching top level domain
-func validateDomainAudienceClaims(a string, aud jwt.ClaimStrings) bool {
+func validateDomainOwnershipClaims(a string, perms *claims.PermStorage) bool {
 	if fqdn, ok := vUtils.GetTopFqdn(a); ok {
-		for _, i := range aud {
-			if i == "owns="+fqdn {
-				return true
-			}
+		if perms.Has("owns=" + fqdn) {
+			return true
 		}
 	}
 	return false
