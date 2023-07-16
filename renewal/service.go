@@ -379,13 +379,18 @@ func (s *Service) setupLegoClient(localData *localCertData) (*lego.Client, error
 func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error) {
 	switch name {
 	case "duckdns":
-		config := duckdns.NewDefaultConfig()
-		config.Token = token
-		return duckdns.NewDNSProviderConfig(config)
+		return duckdns.NewDNSProviderConfig(&duckdns.Config{
+			Token:              token,
+			PropagationTimeout: 15 * time.Minute,
+			PollingInterval:    2 * time.Minute,
+		})
 	case "namesilo":
-		config := namesilo.NewDefaultConfig()
-		config.APIKey = token
-		return namesilo.NewDNSProviderConfig(config)
+		return namesilo.NewDNSProviderConfig(&namesilo.Config{
+			APIKey:             token,
+			PropagationTimeout: 2 * time.Hour,
+			PollingInterval:    15 * time.Minute,
+			TTL:                3600,
+		})
 	default:
 		return nil, ErrUnsupportedDNSProvider
 	}
