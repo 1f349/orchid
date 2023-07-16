@@ -364,7 +364,7 @@ func (s *Service) setupLegoClient(localData *localCertData) (*lego.Client, error
 	}
 
 	// make sure the LetsEncrypt account is registered
-	register, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
+	register, err := client.Registration.UpdateRegistration(registration.RegisterOptions{TermsOfServiceAgreed: true})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update account registration: %w", err)
 	}
