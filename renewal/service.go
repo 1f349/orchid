@@ -69,11 +69,12 @@ type Service struct {
 	certDir    string
 	keyDir     string
 	insecure   bool
+	client     *lego.Client
 }
 
 // NewService creates a new certificate renewal service.
 func NewService(wg *sync.WaitGroup, db *sql.DB, httpAcme challenge.Provider, leConfig LetsEncryptConfig, certDir, keyDir string) (*Service, error) {
-	r := &Service{
+	s := &Service{
 		db:         db,
 		httpAcme:   httpAcme,
 		certTicker: time.NewTicker(time.Minute * 10),
@@ -98,28 +99,35 @@ func NewService(wg *sync.WaitGroup, db *sql.DB, httpAcme challenge.Provider, leC
 	}
 
 	// load lets encrypt private key
-	err = r.resolveLEPrivKey(leConfig.Account.PrivateKey)
+	err = s.resolveLEPrivKey(leConfig.Account.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve LetsEncrypt account private key: %w", err)
 	}
 
 	// init domains table
-	_, err = r.db.Exec(createTableCertificates)
+	_, err = s.db.Exec(createTableCertificates)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create certificates table: %w", err)
 	}
 
 	// resolve CA information
-	r.resolveCADirectory(leConfig.Directory)
-	err = r.resolveCACertificate(leConfig.Certificate)
+	s.resolveCADirectory(leConfig.Directory)
+	err = s.resolveCACertificate(leConfig.Certificate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve CA certificate: %w", err)
 	}
 
+	// setup client for requesting a new certificate
+	client, err := s.setupLegoClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate a client: %w", err)
+	}
+	s.client = client
+
 	// start the background routine
 	wg.Add(1)
-	go r.renewalRoutine(wg)
-	return r, nil
+	go s.renewalRoutine(wg)
+	return s, nil
 }
 
 // Shutdown the renewal service.
@@ -328,7 +336,7 @@ func (s *Service) fetchDomains(localData *localCertData) ([]string, error) {
 	return domains, nil
 }
 
-func (s *Service) setupLegoClient(localData *localCertData) (*lego.Client, error) {
+func (s *Service) setupLegoClient() (*lego.Client, error) {
 	// create lego config and change the certificate authority directory URL and the
 	// http.Client transport if an alternative is provided
 	config := lego.NewConfig(s.leAccount)
@@ -346,25 +354,8 @@ func (s *Service) setupLegoClient(localData *localCertData) (*lego.Client, error
 	// set http challenge provider
 	_ = client.Challenge.SetHTTP01Provider(s.httpAcme)
 
-	// if testDnsOptions is defined then set up the test provider
-	if testDnsOptions != nil {
-		// set up the dns provider used during tests and disable propagation as no dns
-		// will validate these tests
-		dnsAddr := testDnsOptions.GetDnsAddrs()
-		log.Printf("Using testDnsOptions with DNS server: %v\n", dnsAddr)
-		_ = client.Challenge.SetDNS01Provider(testDnsOptions, dns01.AddRecursiveNameservers(dnsAddr), dns01.DisableCompletePropagationRequirement())
-	} else if localData.dns.name.Valid && localData.dns.token.Valid {
-		// if the dns name and token are "valid" meaning non-null in this case
-		// set up the specific dns provider requested
-		dnsProv, err := s.getDnsProvider(localData.dns.name.String, localData.dns.token.String)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve dns provider: %w", err)
-		}
-		_ = client.Challenge.SetDNS01Provider(dnsProv)
-	}
-
 	// make sure the LetsEncrypt account is registered
-	register, err := client.Registration.UpdateRegistration(registration.RegisterOptions{TermsOfServiceAgreed: true})
+	register, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update account registration: %w", err)
 	}
@@ -476,14 +467,28 @@ func (s *Service) renewCertInternal(localData *localCertData) (*x509.Certificate
 		return nil, nil, fmt.Errorf("failed to update cert: %w", err)
 	}
 
-	// setup client for requesting a new certificate
-	client, err := s.setupLegoClient(localData)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate a client: %w", err)
+	// remove old dns challenge
+	s.client.Challenge.Remove(challenge.DNS01)
+
+	// if testDnsOptions is defined then set up the test provider
+	if testDnsOptions != nil {
+		// set up the dns provider used during tests and disable propagation as no dns
+		// will validate these tests
+		dnsAddr := testDnsOptions.GetDnsAddrs()
+		log.Printf("Using testDnsOptions with DNS server: %v\n", dnsAddr)
+		_ = s.client.Challenge.SetDNS01Provider(testDnsOptions, dns01.AddRecursiveNameservers(dnsAddr), dns01.DisableCompletePropagationRequirement())
+	} else if localData.dns.name.Valid && localData.dns.token.Valid {
+		// if the dns name and token are "valid" meaning non-null in this case
+		// set up the specific dns provider requested
+		dnsProv, err := s.getDnsProvider(localData.dns.name.String, localData.dns.token.String)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to resolve dns provider: %w", err)
+		}
+		_ = s.client.Challenge.SetDNS01Provider(dnsProv)
 	}
 
 	// obtain new certificate - this call will hang until a certificate is ready
-	obtain, err := client.Certificate.Obtain(certificate.ObtainRequest{
+	obtain, err := s.client.Certificate.Obtain(certificate.ObtainRequest{
 		Domains:    domains,
 		PrivateKey: privKey,
 		Bundle:     true,
@@ -509,7 +514,7 @@ func (s *Service) renewCertInternal(localData *localCertData) (*x509.Certificate
 }
 
 // setRenewing sets the renewing and failed states in the database for a
-// specified certifcate id.
+// specified certificate id.
 func (s *Service) setRenewing(id uint64, renewing, failed bool) {
 	_, err := s.db.Exec("UPDATE certificates SET renewing = ?, renew_failed = ? WHERE id = ?", renewing, failed, id)
 	if err != nil {
