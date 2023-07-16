@@ -368,6 +368,7 @@ func (s *Service) setupLegoClient() (*lego.Client, error) {
 // getDnsProvider loads a DNS challenge provider using the provided name and
 // token
 func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error) {
+	log.Printf("[Renewal] Loading dns provider: %s with token %s*****\n", name, token[:3])
 	switch name {
 	case "duckdns":
 		return duckdns.NewDNSProviderConfig(&duckdns.Config{
