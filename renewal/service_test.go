@@ -17,11 +17,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"go/build"
-	"io"
 	"log"
 	"math/big"
 	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -106,15 +104,6 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) *Service {
 	assert.NoError(t, err)
 	log.Println("DB File:", dbFile)
 
-	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.TLSClientConfig.InsecureSkipVerify = true
-	req, err := http.NewRequest(http.MethodGet, "https://localhost:14000/root", nil)
-	assert.NoError(t, err)
-	res, err := tr.RoundTrip(req)
-	assert.NoError(t, err)
-	certRaw, err := io.ReadAll(res.Body)
-	assert.NoError(t, err)
-
 	certDir, err := os.MkdirTemp("", "orchid-certs")
 	keyDir, err := os.MkdirTemp("", "orchid-keys")
 
@@ -128,7 +117,7 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) *Service {
 			PrivateKey: string(pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(lePrivKey)})),
 		},
 		Directory:   "https://localhost:14000/dir",
-		Certificate: string(certRaw),
+		Certificate: "insecure",
 		insecure:    true,
 	}, certDir, keyDir)
 	fmt.Println(err)
