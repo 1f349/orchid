@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/MrMelon54/violet/utils"
+import "github.com/1f349/violet/utils"
 
 type DomainChecker []string
 

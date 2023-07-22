@@ -1,6 +1,6 @@
 package main
 
-import "github.com/MrMelon54/orchid/renewal"
+import "github.com/1f349/orchid/renewal"
 
 type startUpConfig struct {
 	Listen  string                    `yaml:"listen"`

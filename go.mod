@@ -1,12 +1,12 @@
-module github.com/MrMelon54/orchid
+module github.com/1f349/orchid
 
 go 1.20
 
 require (
+	github.com/1f349/violet v0.0.6
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/MrMelon54/certgen v0.0.1
 	github.com/MrMelon54/mjwt v0.1.1
-	github.com/MrMelon54/violet v0.0.2
 	github.com/go-acme/lego/v4 v4.12.3
 	github.com/google/subcommands v1.2.0
 	github.com/google/uuid v1.3.0
@@ -14,6 +14,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/miekg/dns v1.1.55
 	github.com/stretchr/testify v1.8.4
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -37,5 +38,4 @@ require (
 	golang.org/x/term v0.10.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

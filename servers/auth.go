@@ -2,9 +2,9 @@ package servers
 
 import (
 	"database/sql"
+	vUtils "github.com/1f349/violet/utils"
 	"github.com/MrMelon54/mjwt"
 	"github.com/MrMelon54/mjwt/auth"
-	vUtils "github.com/MrMelon54/violet/utils"
 	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"

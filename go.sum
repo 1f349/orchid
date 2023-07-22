@@ -1,11 +1,11 @@
+github.com/1f349/violet v0.0.6 h1:JrSQCT3sMPJshFYXUoZOg4kjFRdE0p1roKDOgtJezC8=
+github.com/1f349/violet v0.0.6/go.mod h1:5vksv2yrh9c3sf74iavp9csb8KFWTfa7fpGqIXH2ka4=
 github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=
 github.com/AlecAivazis/survey/v2 v2.3.7/go.mod h1:xUTIdE4KCOIjsBAE1JYsUPoCqYdZ1reCfTwbto0Fduo=
 github.com/MrMelon54/certgen v0.0.1 h1:ycWdZ2RlxQ5qSuejeBVv4aXjGo5hdqqL4j4EjrXnFMk=
 github.com/MrMelon54/certgen v0.0.1/go.mod h1:GHflVlSbtFLJZLpN1oWyUvDBRrR8qCWiwZLXCCnS2Gc=
 github.com/MrMelon54/mjwt v0.1.1 h1:m+aTpxbhQCrOPKHN170DQMFR5r938LkviU38unob5Jw=
 github.com/MrMelon54/mjwt v0.1.1/go.mod h1:oYrDBWK09Hju98xb+bRQ0wy+RuAzacxYvKYOZchR2Tk=
-github.com/MrMelon54/violet v0.0.2 h1:eKyeNDncF62PFE+wi+UN2qGgzFrL+7llVo3roPb9Lkw=
-github.com/MrMelon54/violet v0.0.2/go.mod h1:lkxrHUtX9llm8wKCHvH9SQHilkhII/MIIbCy9U4jEHU=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 h1:+vx7roKuyA63nhn5WAunQHLTznkw5W8b1Xc0dNjp83s=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2/go.mod h1:HBCaDeC1lPdgDeDbhX8XFpy1jqjK0IBG8W5K+xYqA0w=
 github.com/cenkalti/backoff/v4 v4.2.1 h1:y4OZtCnogmCPw98Zjyt5a6+QwPLGkiQsYW5oUqylYbM=

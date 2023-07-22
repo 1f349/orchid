@@ -9,9 +9,9 @@ import (
 	"database/sql"
 	"encoding/pem"
 	"fmt"
+	"github.com/1f349/orchid/pebble"
+	"github.com/1f349/orchid/test"
 	"github.com/MrMelon54/certgen"
-	"github.com/MrMelon54/orchid/pebble"
-	"github.com/MrMelon54/orchid/test"
 	"github.com/go-acme/lego/v4/lego"
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
@@ -131,8 +131,8 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) *Service {
 		Certificate: string(certRaw),
 		insecure:    true,
 	}, certDir, keyDir)
+	fmt.Println(err)
 	assert.NoError(t, err)
-	service.transport = acmeProv
 
 	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	assert.NoError(t, err)
