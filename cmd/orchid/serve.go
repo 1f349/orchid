@@ -4,22 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
 	httpAcme "github.com/1f349/orchid/http-acme"
 	"github.com/1f349/orchid/renewal"
 	"github.com/1f349/orchid/servers"
 	"github.com/1f349/violet/utils"
+	"github.com/MrMelon54/exit-reload"
 	"github.com/MrMelon54/mjwt"
 	"github.com/google/subcommands"
 	_ "github.com/mattn/go-sqlite3"
 	"gopkg.in/yaml.v3"
 	"log"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"sync"
-	"syscall"
-	"time"
 )
 
 type serveCmd struct{ configPath string }
@@ -94,20 +91,9 @@ func normalLoad(conf startUpConfig, wd string) {
 	log.Printf("[API] Starting API server on: '%s'\n", srv.Addr)
 	go utils.RunBackgroundHttp("API", srv)
 
-	// Wait for exit signal
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
-	fmt.Println()
-
-	// Stop servers
-	log.Printf("[Orchid] Stopping...")
-	n := time.Now()
-
-	// stop renewal service and api server
-	renewalService.Shutdown()
-	srv.Close()
-
-	log.Printf("[Orchid] Took '%s' to shutdown\n", time.Now().Sub(n))
-	log.Println("[Orchid] Goodbye")
+	exit_reload.ExitReload("Violet", func() {}, func() {
+		// stop renewal service and api server
+		renewalService.Shutdown()
+		srv.Close()
+	})
 }

@@ -6,6 +6,7 @@ require (
 	github.com/1f349/violet v0.0.6
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/MrMelon54/certgen v0.0.1
+	github.com/MrMelon54/exit-reload v0.0.1
 	github.com/MrMelon54/mjwt v0.1.1
 	github.com/go-acme/lego/v4 v4.12.3
 	github.com/google/subcommands v1.2.0
