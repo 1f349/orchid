@@ -26,6 +26,10 @@ type DomainStateValue struct {
 func NewApiServer(listen string, db *sql.DB, signer mjwt.Verifier, domains oUtils.DomainChecker) *http.Server {
 	r := httprouter.New()
 
+	r.GET("/", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+		http.Error(rw, "Orchid API Endpoint", http.StatusOK)
+	})
+
 	// Endpoint for looking up a certificate
 	r.GET("/lookup/:domain", checkAuthWithPerm(signer, "orchid:cert", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
 		domain := params.ByName("domain")
