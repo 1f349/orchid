@@ -95,7 +95,7 @@ func NewApiServer(listen string, db *sql.DB, signer mjwt.Verifier, domains oUtil
 				if domainMap[topFqdn] {
 					m[c.Id] = cert
 				}
-				return
+				continue
 			}
 
 			// add to other and main if owned
