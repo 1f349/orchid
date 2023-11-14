@@ -29,7 +29,7 @@ type Certificate struct {
 	RenewFailed bool      `json:"renew_failed"`
 	NotAfter    time.Time `json:"not_after"`
 	UpdatedAt   time.Time `json:"updated_at"`
-	Domains     []string  `json:"domain"`
+	Domains     []string  `json:"domains"`
 }
 
 //go:embed find-owned-certs.sql
