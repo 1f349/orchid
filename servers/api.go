@@ -2,13 +2,15 @@ package servers
 
 import (
 	"database/sql"
+	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/1f349/mjwt"
+	"github.com/1f349/mjwt/claims"
 	oUtils "github.com/1f349/orchid/utils"
 	vUtils "github.com/1f349/violet/utils"
-	"github.com/MrMelon54/mjwt"
-	"github.com/MrMelon54/mjwt/claims"
 	"github.com/julienschmidt/httprouter"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -18,6 +20,20 @@ type DomainStateValue struct {
 	Domain string `json:"domain"`
 	State  int    `json:"state"`
 }
+
+type Certificate struct {
+	Id          int       `json:"id"`
+	AutoRenew   bool      `json:"auto_renew"`
+	Active      bool      `json:"active"`
+	Renewing    bool      `json:"renewing"`
+	RenewFailed bool      `json:"renew_failed"`
+	NotAfter    time.Time `json:"not_after"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Domains     []string  `json:"domain"`
+}
+
+//go:embed find-owned-certs.sql
+var findOwnedCerts string
 
 // NewApiServer creates and runs a http server containing all the API
 // endpoints for the software
@@ -30,6 +46,74 @@ func NewApiServer(listen string, db *sql.DB, signer mjwt.Verifier, domains oUtil
 		http.Error(rw, "Orchid API Endpoint", http.StatusOK)
 	})
 
+	// Endpoint for grabbing owned certificates
+	r.GET("/owned", checkAuthWithPerm(signer, "orchid:cert", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
+		domains := getDomainOwnershipClaims(b.Claims.Perms)
+		domainMap := make(map[string]bool)
+		for _, i := range domains {
+			domainMap[i] = true
+		}
+
+		// query database
+		query, err := db.Query(findOwnedCerts)
+		if err != nil {
+			http.Error(rw, "Database Error", http.StatusInternalServerError)
+			return
+		}
+
+		mOther := make(map[int]*Certificate) // other certificates
+		m := make(map[int]*Certificate)      // certificates owned by this user
+
+		// loop over query rows
+		for query.Next() {
+			var c Certificate
+			var d string
+			err := query.Scan(&c.Id, &c.AutoRenew, &c.Active, &c.Renewing, &c.RenewFailed, &c.NotAfter, &c.UpdatedAt, &d)
+			if err != nil {
+				log.Println("Failed to read certificate from database: ", err)
+				http.Error(rw, "Database Error", http.StatusInternalServerError)
+				return
+			}
+
+			// check in owned map
+			if cert, ok := m[c.Id]; ok {
+				cert.Domains = append(cert.Domains, d)
+				continue
+			}
+
+			// get etld+1
+			topFqdn, found := vUtils.GetTopFqdn(d)
+			if !found {
+				log.Println("Invalid domain found: ", d)
+				http.Error(rw, "Database Error", http.StatusInternalServerError)
+				return
+			}
+
+			// if found in other, add domain and put in main if owned
+			if cert, ok := mOther[c.Id]; ok {
+				cert.Domains = append(cert.Domains, d)
+				if domainMap[topFqdn] {
+					m[c.Id] = cert
+				}
+				return
+			}
+
+			// add to other and main if owned
+			c.Domains = []string{d}
+			mOther[c.Id] = &c
+			if domainMap[topFqdn] {
+				m[c.Id] = &c
+			}
+		}
+		if err := query.Err(); err != nil {
+			log.Println("Failed after reading certificates from database: ", err)
+			http.Error(rw, "Database Error", http.StatusInternalServerError)
+			return
+		}
+		rw.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(rw).Encode(m)
+	}))
+
 	// Endpoint for looking up a certificate
 	r.GET("/lookup/:domain", checkAuthWithPerm(signer, "orchid:cert", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
 		domain := params.ByName("domain")
@@ -39,7 +123,7 @@ func NewApiServer(listen string, db *sql.DB, signer mjwt.Verifier, domains oUtil
 		}
 	}))
 
-	r.POST("/cert", checkAuthWithPerm(signer, "orchid:cert:create", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
+	r.POST("/cert", checkAuthWithPerm(signer, "orchid:cert", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
 		_, err := db.Exec(`INSERT INTO certificates (owner, dns, updated_at) VALUES (?, ?, ?)`, b.Subject, 0, time.Now())
 		if err != nil {
 			apiError(rw, http.StatusInternalServerError, "Failed to delete certificate")
@@ -47,7 +131,7 @@ func NewApiServer(listen string, db *sql.DB, signer mjwt.Verifier, domains oUtil
 		}
 		rw.WriteHeader(http.StatusAccepted)
 	}))
-	r.DELETE("/cert/:id", checkAuthForCertificate(signer, "orchid:cert:delete", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId uint64) {
+	r.DELETE("/cert/:id", checkAuthForCertificate(signer, "orchid:cert", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId uint64) {
 		_, err := db.Exec(`UPDATE certificates SET active = 0 WHERE id = ?`, certId)
 		if err != nil {
 			apiError(rw, http.StatusInternalServerError, "Failed to delete certificate")
@@ -64,7 +148,7 @@ func NewApiServer(listen string, db *sql.DB, signer mjwt.Verifier, domains oUtil
 
 	// Endpoint for generating a temporary certificate for modified domains
 	r.POST("/cert/:id/temp", checkAuth(signer, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
-		if !b.Claims.Perms.Has("orchid:cert:quick") {
+		if !b.Claims.Perms.Has("orchid:cert") {
 			apiError(rw, http.StatusForbidden, "No permission")
 			return
 		}
@@ -168,11 +252,21 @@ func safeTransaction(rw http.ResponseWriter, db *sql.DB, cb func(rw http.Respons
 	return nil
 }
 
+// getDomainOwnershipClaims returns the domains marked as owned from PermStorage,
+// they match `domain:owns=<fqdn>` where fqdn will be returned
+func getDomainOwnershipClaims(perms *claims.PermStorage) []string {
+	a := perms.Search("domain:owns=*")
+	for i := range a {
+		a[i] = a[i][len("domain:owns="):]
+	}
+	return a
+}
+
 // validateDomainOwnershipClaims validates if the claims contain the
-// `owns=<fqdn>` field with the matching top level domain
+// `domain:owns=<fqdn>` field with the matching top level domain
 func validateDomainOwnershipClaims(a string, perms *claims.PermStorage) bool {
 	if fqdn, ok := vUtils.GetTopFqdn(a); ok {
-		if perms.Has("owns=" + fqdn) {
+		if perms.Has("domain:owns=" + fqdn) {
 			return true
 		}
 	}

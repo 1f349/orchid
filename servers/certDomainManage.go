@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/1f349/mjwt"
 	"github.com/1f349/orchid/renewal"
 	"github.com/1f349/orchid/utils"
-	"github.com/MrMelon54/mjwt"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 )
