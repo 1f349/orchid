@@ -242,7 +242,7 @@ func (s *Service) renewalRoutine(wg *sync.WaitGroup) {
 			go func() {
 				// run a renewal check and log errors, but ignore ErrAlreadyRenewing
 				err := s.renewalCheck()
-				if err != nil && err != ErrAlreadyRenewing {
+				if err != nil && !errors.Is(err, ErrAlreadyRenewing) {
 					log.Println("[Renewal] Certificate check, an error occurred: ", err)
 				}
 			}()
@@ -277,6 +277,7 @@ func (s *Service) renewalCheck() error {
 
 	// renew succeeded
 	log.Printf("[Renewal] Updated certificate %d successfully\n", localData.id)
+
 	return nil
 }
 
