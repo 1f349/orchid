@@ -13,6 +13,7 @@ import (
 	"github.com/1f349/orchid/logger"
 	"github.com/1f349/orchid/pebble"
 	"github.com/1f349/orchid/test"
+	"github.com/1f349/simplemail"
 	"github.com/charmbracelet/log"
 	"github.com/go-acme/lego/v4/lego"
 	"github.com/google/uuid"
@@ -125,7 +126,7 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) (*Service, *sql.D
 		Directory:   "https://localhost:14000/dir",
 		Certificate: "insecure",
 		insecure:    true,
-	}, certDir, keyDir)
+	}, certDir, keyDir, nil, simplemail.FromAddress{})
 	fmt.Println(err)
 	assert.NoError(t, err)
 
@@ -170,7 +171,7 @@ func TestPebbleRenewal(t *testing.T) {
 			_, err := db2.Exec("DELETE FROM certificate_domains")
 			assert.NoError(t, err)
 
-			_, err = db2.Exec(`INSERT INTO certificates (owner, dns, auto_renew, active, renewing, renew_retry, not_after, updated_at) VALUES (1, 1, 1, 1, 0, '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00');`)
+			_, err = db2.Exec(`INSERT INTO certificates (owner, dns, auto_renew, active, renewing, renew_retry, not_after, updated_at) VALUES (1, 1, 1, 1, 0, 0, '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00');`)
 			assert.NoError(t, err)
 			for _, j := range i.domains {
 				_, err = db2.Exec(`INSERT INTO certificate_domains (cert_id, domain) VALUES (1, ?)`, j)

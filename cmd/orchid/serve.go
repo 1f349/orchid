@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"flag"
 	"github.com/1f349/mjwt"
 	"github.com/1f349/orchid"
@@ -9,6 +10,7 @@ import (
 	"github.com/1f349/orchid/logger"
 	"github.com/1f349/orchid/renewal"
 	"github.com/1f349/orchid/servers"
+	"github.com/1f349/simplemail"
 	"github.com/1f349/violet/utils"
 	"github.com/google/subcommands"
 	_ "github.com/mattn/go-sqlite3"
@@ -62,11 +64,19 @@ func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 	return subcommands.ExitSuccess
 }
 
+//go:embed mail-templates/*.go.{html,txt}
+var mailTemplates embed.FS
+
 func normalLoad(conf startUpConfig, wd string) {
 	// load the MJWT RSA public key from a pem encoded file
 	mJwtVerify, err := mjwt.NewKeyStoreFromPath(filepath.Join(wd, "keys"))
 	if err != nil {
 		logger.Logger.Fatal("Failed to load MJWT verifier public key from file", "path", filepath.Join(wd, "keys"), "err", err)
+	}
+
+	mail, err := simplemail.New(&conf.Mail.Mail, "mail", mailTemplates)
+	if err != nil {
+		logger.Logger.Fatal("Failed to load email sender", "err", err)
 	}
 
 	// open sqlite database
@@ -83,7 +93,7 @@ func normalLoad(conf startUpConfig, wd string) {
 	if err != nil {
 		logger.Logger.Fatal("HTTP Acme Error", "err", err)
 	}
-	renewalService, err := renewal.NewService(wg, db, acmeProv, conf.LE, certDir, keyDir)
+	renewalService, err := renewal.NewService(wg, db, acmeProv, conf.LE, certDir, keyDir, mail, conf.Mail.To)
 	if err != nil {
 		logger.Logger.Fatal("Service Error", "err", err)
 	}
@@ -91,7 +101,7 @@ func normalLoad(conf startUpConfig, wd string) {
 	logger.Logger.Info("Starting API server", "listen", srv.Addr)
 	go utils.RunBackgroundHttp(logger.Logger, srv)
 
-	exit_reload.ExitReload("Violet", func() {}, func() {
+	exit_reload.ExitReload("Orchid", func() {}, func() {
 		// stop renewal service and api server
 		renewalService.Shutdown()
 		srv.Close()

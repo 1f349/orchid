@@ -4,6 +4,7 @@ go 1.23.5
 
 require (
 	github.com/1f349/mjwt v0.4.1
+	github.com/1f349/simplemail v0.0.1
 	github.com/1f349/violet v0.0.14
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/charmbracelet/log v0.4.0
@@ -22,6 +23,7 @@ require (
 )
 
 require (
+	github.com/1f349/overlapfs v0.0.1 // indirect
 	github.com/1f349/rsa-helper v0.0.2 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/becheran/wildmatch-go v1.0.0 // indirect
@@ -29,6 +31,10 @@ require (
 	github.com/charmbracelet/lipgloss v1.0.0 // indirect
 	github.com/charmbracelet/x/ansi v0.8.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/emersion/go-message v0.18.0 // indirect
+	github.com/emersion/go-sasl v0.0.0-20231106173351-e73c9f7bad43 // indirect
+	github.com/emersion/go-smtp v0.20.2 // indirect
+	github.com/emersion/go-textwrapper v0.0.0-20200911093747-65d896831594 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.4 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
