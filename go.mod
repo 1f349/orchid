@@ -1,9 +1,12 @@
 module github.com/1f349/orchid
 
-go 1.21.4
+go 1.22
+
+toolchain go1.22.0
 
 require (
 	github.com/1f349/mjwt v0.2.1
+	github.com/1f349/simplemail v0.0.1
 	github.com/1f349/violet v0.0.12
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/MrMelon54/certgen v0.0.1
@@ -19,9 +22,14 @@ require (
 )
 
 require (
+	github.com/1f349/overlapfs v0.0.1 // indirect
 	github.com/becheran/wildmatch-go v1.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/emersion/go-message v0.18.0 // indirect
+	github.com/emersion/go-sasl v0.0.0-20231106173351-e73c9f7bad43 // indirect
+	github.com/emersion/go-smtp v0.20.2 // indirect
+	github.com/emersion/go-textwrapper v0.0.0-20200911093747-65d896831594 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect

@@ -119,7 +119,7 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) *Service {
 		Directory:   "https://localhost:14000/dir",
 		Certificate: "insecure",
 		insecure:    true,
-	}, certDir, keyDir)
+	}, certDir, keyDir, nil)
 	fmt.Println(err)
 	assert.NoError(t, err)
 

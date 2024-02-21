@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/1f349/orchid/pebble"
+	"github.com/1f349/simplemail"
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge"
 	"github.com/go-acme/lego/v4/challenge/dns01"
@@ -70,10 +71,12 @@ type Service struct {
 	keyDir     string
 	insecure   bool
 	client     *lego.Client
+	mail       *simplemail.SimpleMail
+	mailTo     simplemail.FromAddress
 }
 
 // NewService creates a new certificate renewal service.
-func NewService(wg *sync.WaitGroup, db *sql.DB, httpAcme challenge.Provider, leConfig LetsEncryptConfig, certDir, keyDir string) (*Service, error) {
+func NewService(wg *sync.WaitGroup, db *sql.DB, httpAcme challenge.Provider, leConfig LetsEncryptConfig, certDir, keyDir string, mail *simplemail.SimpleMail, mailTo simplemail.FromAddress) (*Service, error) {
 	s := &Service{
 		db:         db,
 		httpAcme:   httpAcme,
@@ -86,6 +89,8 @@ func NewService(wg *sync.WaitGroup, db *sql.DB, httpAcme challenge.Provider, leC
 		certDir:  certDir,
 		keyDir:   keyDir,
 		insecure: leConfig.insecure,
+		mail:     mail,
+		mailTo:   mailTo,
 	}
 
 	// make certDir and keyDir
@@ -134,6 +139,18 @@ func NewService(wg *sync.WaitGroup, db *sql.DB, httpAcme challenge.Provider, leC
 func (s *Service) Shutdown() {
 	log.Println("[Renewal] Shutting down certificate renewal service")
 	close(s.certDone)
+}
+
+func (s *Service) sendErrorEmail(templateName, subject string, data map[string]any, err error) error {
+	if data == nil {
+		data = make(map[string]any)
+	}
+	data["error"] = err
+	mailErr := s.mail.Send(templateName, subject, s.mailTo.Address, data)
+	if mailErr != nil {
+		return fmt.Errorf("failed to send error email for: %w because: %w", err, mailErr)
+	}
+	return err
 }
 
 // resolveLEPrivKey resolves the private key for the LetsEncrypt account.
@@ -261,7 +278,7 @@ func (s *Service) renewalCheck() error {
 	// check for running out certificates in the database
 	localData, err := s.findNextCertificateToRenew()
 	if err != nil {
-		return fmt.Errorf("failed to find a certificate to renew: %w", err)
+		return s.sendErrorEmail("failed-to-find", "Failed to find a certificate to renew", nil, fmt.Errorf("failed to find a certificate to renew: %w", err))
 	}
 
 	// no certificates to update
@@ -272,7 +289,12 @@ func (s *Service) renewalCheck() error {
 	// renew the certificate from the collected data
 	err = s.renewCert(localData)
 	if err != nil {
-		return err
+		return s.sendErrorEmail("failed-to-renew", "Failed to renew a certificate", map[string]any{
+			"id":        localData.id,
+			"dns-name":  localData.dns.name,
+			"domains":   localData.domains,
+			"not-after": localData.notAfter,
+		}, fmt.Errorf("failed to renew a certificate: %w", err))
 	}
 
 	// renew succeeded
