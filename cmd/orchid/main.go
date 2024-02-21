@@ -1,6 +1,8 @@
 package main
 
 import (
+	"embed"
+	"errors"
 	"flag"
 	"github.com/1f349/mjwt"
 	"github.com/1f349/orchid"
@@ -9,16 +11,22 @@ import (
 	"github.com/1f349/orchid/logger"
 	"github.com/1f349/orchid/renewal"
 	"github.com/1f349/orchid/servers"
+	"github.com/1f349/overlapfs"
+	"github.com/1f349/simplemail"
 	"github.com/1f349/violet/utils"
 	_ "github.com/mattn/go-sqlite3"
 	exitReload "github.com/mrmelon54/exit-reload"
 	"gopkg.in/yaml.v3"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
 )
 
 var configPath string
+
+//go:embed mail-templates/*
+var mailTemplates embed.FS
 
 func main() {
 	flag.StringVar(&configPath, "conf", "", "/path/to/config.json : path to the config file")
@@ -70,6 +78,24 @@ func runDaemon(wd string, conf startUpConfig) {
 		logger.Logger.Fatal("Failed to load MJWT verifier public key from file", "path", filepath.Join(wd, "keys"), "err", err)
 	}
 
+	// get mail templates
+	mailDir := filepath.Join(wd, "mail-templates")
+	err = os.Mkdir(mailDir, os.ModePerm)
+	if err != nil && !errors.Is(err, os.ErrExist) {
+		return
+	}
+	wdFs := os.DirFS(mailDir)
+	mailTemplatesSub, err := fs.Sub(mailTemplates, "mail-templates")
+	if err != nil {
+		logger.Logger.Fatal("Failed to load embedded mail templates", "err", err)
+	}
+	templatesFS := overlapfs.OverlapFS{A: mailTemplatesSub, B: wdFs}
+
+	mail, err := simplemail.New(&conf.Mail.Mail, templatesFS)
+	if err != nil {
+		logger.Logger.Fatal("Failed to load email sender", "err", err)
+	}
+
 	// open sqlite database
 	db, err := orchid.InitDB(filepath.Join(wd, "orchid.db.sqlite"))
 	if err != nil {
@@ -84,7 +110,7 @@ func runDaemon(wd string, conf startUpConfig) {
 	if err != nil {
 		logger.Logger.Fatal("HTTP Acme Error", "err", err)
 	}
-	renewalService, err := renewal.NewService(wg, db, acmeProv, conf.LE, certDir, keyDir)
+	renewalService, err := renewal.NewService(wg, db, acmeProv, conf.LE, certDir, keyDir, mail, conf.Mail.To)
 	if err != nil {
 		logger.Logger.Fatal("Service Error", "err", err)
 	}

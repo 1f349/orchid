@@ -13,6 +13,7 @@ import (
 	"github.com/1f349/orchid/logger"
 	"github.com/1f349/orchid/pebble"
 	"github.com/1f349/orchid/test"
+	"github.com/1f349/simplemail"
 	"github.com/charmbracelet/log"
 	"github.com/go-acme/lego/v4/lego"
 	"github.com/google/uuid"
@@ -125,7 +126,7 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) (*Service, *sql.D
 		Directory:   "https://localhost:14000/dir",
 		Certificate: "insecure",
 		insecure:    true,
-	}, certDir, keyDir)
+	}, certDir, keyDir, nil, simplemail.FromAddress{})
 	fmt.Println(err)
 	assert.NoError(t, err)
 
