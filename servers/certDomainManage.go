@@ -13,8 +13,8 @@ import (
 )
 
 func certDomainManageGET(db *database.Queries, signer mjwt.Verifier) httprouter.Handle {
-	return checkAuthForCertificate(signer, "orchid:cert:edit", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId uint64) {
-		rows, err := db.GetDomainStatesForCert(context.Background(), int64(certId))
+	return checkAuthForCertificate(signer, "orchid:cert:edit", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId int64) {
+		rows, err := db.GetDomainStatesForCert(context.Background(), certId)
 		if err != nil {
 			apiError(rw, http.StatusInsufficientStorage, "Database error")
 			return
@@ -71,8 +71,8 @@ func certDomainManagePUTandDELETE(db *database.Queries, signer mjwt.Verifier, do
 			} else {
 				// update domains to removed state
 				err := tx.UpdateDomains(req.Context(), database.UpdateDomainsParams{
-					State:  renewal.DomainStateRemoved,
-					Domain: d,
+					State:   renewal.DomainStateRemoved,
+					Domains: d,
 				})
 				if err != nil {
 					return fmt.Errorf("failed to remove domains from the database")

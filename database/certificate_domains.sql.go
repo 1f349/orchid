@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"strings"
 )
 
 const addDomains = `-- name: AddDomains :exec
@@ -107,15 +108,26 @@ func (q *Queries) SetDomainStateForCert(ctx context.Context, arg SetDomainStateF
 const updateDomains = `-- name: UpdateDomains :exec
 UPDATE certificate_domains
 SET state = ?
-WHERE domain IN ?
+WHERE domain IN (/*SLICE:domains*/?)
 `
 
 type UpdateDomainsParams struct {
-	State  int64  `json:"state"`
-	Domain string `json:"domain"`
+	State   int64    `json:"state"`
+	Domains []string `json:"domains"`
 }
 
 func (q *Queries) UpdateDomains(ctx context.Context, arg UpdateDomainsParams) error {
-	_, err := q.db.ExecContext(ctx, updateDomains, arg.State, arg.Domain)
+	query := updateDomains
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.State)
+	if len(arg.Domains) > 0 {
+		for _, v := range arg.Domains {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:domains*/?", strings.Repeat(",?", len(arg.Domains))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:domains*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
 	return err
 }

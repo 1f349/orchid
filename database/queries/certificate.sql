@@ -40,6 +40,10 @@ WHERE id = ?;
 INSERT INTO certificates (owner, dns, not_after, updated_at)
 VALUES (?, ?, ?, ?);
 
+-- name: AddTempCertificate :exec
+INSERT INTO certificates (owner, dns, active, updated_at, temp_parent)
+VALUES (?, NULL, 1, ?, ?);
+
 -- name: RemoveCertificate :exec
 UPDATE certificates
 SET active = 0

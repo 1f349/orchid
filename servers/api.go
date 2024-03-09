@@ -163,9 +163,13 @@ func NewApiServer(listen string, db *database.Queries, signer mjwt.Verifier, dom
 		}
 
 		// run a safe transaction to create the temporary certificate
-		if safeTransaction(rw, db, func(rw http.ResponseWriter, tx *sql.Tx) error {
+		if db.UseTx(req.Context(), func(tx *database.Queries) error {
 			// insert temporary certificate into database
-			_, err := db.Exec(`INSERT INTO certificates (owner, dns, active, updated_at, temp_parent) VALUES (?, 0, 1, ?, ?)`, b.Subject, time.Now(), id)
+			err := tx.AddTempCertificate(req.Context(), database.AddTempCertificateParams{
+				Owner:      b.Subject,
+				UpdatedAt:  time.Now(),
+				TempParent: sql.NullInt64{Valid: true, Int64: id},
+			})
 			return err
 		}) != nil {
 			apiError(rw, http.StatusInsufficientStorage, "Database error")

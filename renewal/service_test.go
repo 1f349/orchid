@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"encoding/pem"
 	"fmt"
+	"github.com/1f349/orchid"
 	"github.com/1f349/orchid/pebble"
 	"github.com/1f349/orchid/test"
 	"github.com/MrMelon54/certgen"
@@ -97,11 +98,14 @@ func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
 	}
 }
 
-func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) *Service {
+func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) (*Service, *sql.DB) {
 	wg := &sync.WaitGroup{}
 	dbFile := fmt.Sprintf("file:%s?mode=memory&cache=shared", uuid.NewString())
-	db, err := sql.Open("sqlite3", dbFile)
+	db, err := orchid.InitDB(dbFile)
 	assert.NoError(t, err)
+	db2, err := sql.Open("sqlite3", dbFile)
+	assert.NoError(t, err)
+
 	log.Println("DB File:", dbFile)
 
 	certDir, err := os.MkdirTemp("", "orchid-certs")
@@ -127,7 +131,7 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) *Service {
 	assert.NoError(t, err)
 	assert.NoError(t, os.WriteFile(filepath.Join(keyDir, "1.key.pem"), pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privKey)}), os.ModePerm))
 
-	return service
+	return service, db2
 }
 
 func TestPebbleRenewal(t *testing.T) {
@@ -151,19 +155,19 @@ func TestPebbleRenewal(t *testing.T) {
 	for _, i := range tests {
 		t.Run(i.name, func(t *testing.T) {
 			//t.Parallel()
-			service := setupPebbleTest(t, serverTls)
+			service, db2 := setupPebbleTest(t, serverTls)
 			//goland:noinspection SqlWithoutWhere
-			_, err := service.db.Exec("DELETE FROM certificate_domains")
+			_, err := db2.Exec("DELETE FROM certificate_domains")
 			assert.NoError(t, err)
 
-			_, err = service.db.Exec(`INSERT INTO certificates (owner, dns, auto_renew, active, renewing, renew_failed, not_after, updated_at) VALUES (1, 1, 1, 1, 0, 0, NULL, NULL)`)
+			_, err = db2.Exec(`INSERT INTO certificates (owner, dns, auto_renew, active, renewing, renew_failed, not_after, updated_at) VALUES (1, 1, 1, 1, 0, 0, 0, 0)`)
 			assert.NoError(t, err)
 			for _, j := range i.domains {
-				_, err = service.db.Exec(`INSERT INTO certificate_domains (cert_id, domain) VALUES (1, ?)`, j)
+				_, err = db2.Exec(`INSERT INTO certificate_domains (cert_id, domain) VALUES (1, ?)`, j)
 				assert.NoError(t, err)
 			}
 
-			query, err := service.db.Query("SELECT cert_id, domain from certificate_domains")
+			query, err := db2.Query("SELECT cert_id, domain from certificate_domains")
 			assert.NoError(t, err)
 			for query.Next() {
 				var a uint64
