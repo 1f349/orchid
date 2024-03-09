@@ -1,9 +1,9 @@
 package servers
 
 import (
-	"database/sql"
 	"github.com/1f349/mjwt"
 	"github.com/1f349/mjwt/auth"
+	"github.com/1f349/orchid/database"
 	vUtils "github.com/1f349/violet/utils"
 	"github.com/julienschmidt/httprouter"
 	"log"
@@ -14,7 +14,7 @@ type AuthClaims mjwt.BaseTypeClaims[auth.AccessTokenClaims]
 
 type AuthCallback func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims)
 
-type CertAuthCallback func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId uint64)
+type CertAuthCallback func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId int64)
 
 // checkAuth validates the bearer token against a mjwt.Verifier and returns an
 // error message or continues to the next handler
@@ -53,7 +53,7 @@ func checkAuthWithPerm(verify mjwt.Verifier, perm string, cb AuthCallback) httpr
 }
 
 // checkAuthForCertificate
-func checkAuthForCertificate(verify mjwt.Verifier, perm string, db *sql.DB, cb CertAuthCallback) httprouter.Handle {
+func checkAuthForCertificate(verify mjwt.Verifier, perm string, db *database.Queries, cb CertAuthCallback) httprouter.Handle {
 	return checkAuthWithPerm(verify, perm, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
 		// lookup certificate owner
 		id, err := checkCertOwner(db, params.ByName("id"), b)
