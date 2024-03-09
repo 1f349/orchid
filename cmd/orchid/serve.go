@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"flag"
 	"github.com/1f349/mjwt"
+	"github.com/1f349/orchid"
 	httpAcme "github.com/1f349/orchid/http-acme"
 	"github.com/1f349/orchid/renewal"
 	"github.com/1f349/orchid/servers"
@@ -70,7 +70,7 @@ func normalLoad(conf startUpConfig, wd string) {
 	}
 
 	// open sqlite database
-	db, err := sql.Open("sqlite3", filepath.Join(wd, "orchid.db.sqlite"))
+	db, err := orchid.InitDB(filepath.Join(wd, "orchid.db.sqlite"))
 	if err != nil {
 		log.Fatal("[Orchid] Failed to open database:", err)
 	}

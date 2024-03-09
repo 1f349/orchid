@@ -33,6 +33,22 @@ func (q *Queries) AddCertificate(ctx context.Context, arg AddCertificateParams) 
 	return err
 }
 
+const addTempCertificate = `-- name: AddTempCertificate :exec
+INSERT INTO certificates (owner, dns, active, updated_at, temp_parent)
+VALUES (?, NULL, 1, ?, ?)
+`
+
+type AddTempCertificateParams struct {
+	Owner      string        `json:"owner"`
+	UpdatedAt  time.Time     `json:"updated_at"`
+	TempParent sql.NullInt64 `json:"temp_parent"`
+}
+
+func (q *Queries) AddTempCertificate(ctx context.Context, arg AddTempCertificateParams) error {
+	_, err := q.db.ExecContext(ctx, addTempCertificate, arg.Owner, arg.UpdatedAt, arg.TempParent)
+	return err
+}
+
 const checkCertOwner = `-- name: CheckCertOwner :one
 SELECT id, owner
 FROM certificates

@@ -20,4 +20,4 @@ VALUES (?, ?, ?);
 -- name: UpdateDomains :exec
 UPDATE certificate_domains
 SET state = ?
-WHERE domain IN (sqlc.slice("domains"));
+WHERE domain IN (sqlc.slice(domains));
