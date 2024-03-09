@@ -1,48 +1,37 @@
 package servers
 
 import (
-	"database/sql"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/1f349/mjwt"
+	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/renewal"
 	"github.com/1f349/orchid/utils"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 )
 
-func certDomainManageGET(db *sql.DB, signer mjwt.Verifier) httprouter.Handle {
+func certDomainManageGET(db *database.Queries, signer mjwt.Verifier) httprouter.Handle {
 	return checkAuthForCertificate(signer, "orchid:cert:edit", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId uint64) {
-		query, err := db.Query(`SELECT domain, state FROM certificate_domains WHERE cert_id = ?`, certId)
+		rows, err := db.GetDomainStatesForCert(context.Background(), int64(certId))
 		if err != nil {
 			apiError(rw, http.StatusInsufficientStorage, "Database error")
 			return
-		}
-
-		// collect all the domains and state values
-		var domainStates []DomainStateValue
-		for query.Next() {
-			var a DomainStateValue
-			err := query.Scan(&a.Domain, &a.State)
-			if err != nil {
-				apiError(rw, http.StatusInsufficientStorage, "Database error")
-				return
-			}
-			domainStates = append(domainStates, a)
 		}
 
 		// write output
 		rw.WriteHeader(http.StatusAccepted)
 		m := map[string]any{
 			"id":      fmt.Sprintf("%d", certId),
-			"domains": domainStates,
+			"domains": rows,
 		}
 		_ = json.NewEncoder(rw).Encode(m)
 	})
 }
 
-func certDomainManagePUTandDELETE(db *sql.DB, signer mjwt.Verifier, domains utils.DomainChecker) httprouter.Handle {
-	return checkAuthForCertificate(signer, "orchid:cert:edit", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId uint64) {
+func certDomainManagePUTandDELETE(db *database.Queries, signer mjwt.Verifier, domains utils.DomainChecker) httprouter.Handle {
+	return checkAuthForCertificate(signer, "orchid:cert:edit", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId int64) {
 		// check request type
 		isAdd := req.Method == http.MethodPut
 
@@ -66,18 +55,25 @@ func certDomainManagePUTandDELETE(db *sql.DB, signer mjwt.Verifier, domains util
 		}
 
 		// run a safe transaction to insert or update the certificate domains
-		if safeTransaction(rw, db, func(rw http.ResponseWriter, tx *sql.Tx) error {
+		if db.UseTx(req.Context(), func(tx *database.Queries) error {
 			if isAdd {
 				// insert domains to add
 				for _, i := range d {
-					_, err := tx.Exec(`INSERT INTO certificate_domains (cert_id, domain, state) VALUES (?, ?, ?)`, certId, i, renewal.DomainStateAdded)
+					err := tx.AddDomains(req.Context(), database.AddDomainsParams{
+						CertID: certId,
+						Domain: i,
+						State:  renewal.DomainStateAdded,
+					})
 					if err != nil {
 						return fmt.Errorf("failed to add domains to the database")
 					}
 				}
 			} else {
 				// update domains to removed state
-				_, err := tx.Exec(`UPDATE certificate_domains SET state = ? WHERE domain IN ?`, renewal.DomainStateRemoved, d)
+				err := tx.UpdateDomains(req.Context(), database.UpdateDomainsParams{
+					State:  renewal.DomainStateRemoved,
+					Domain: d,
+				})
 				if err != nil {
 					return fmt.Errorf("failed to remove domains from the database")
 				}

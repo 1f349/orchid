@@ -1,12 +1,14 @@
 package servers
 
 import (
+	"context"
 	"database/sql"
 	_ "embed"
 	"encoding/json"
 	"fmt"
 	"github.com/1f349/mjwt"
 	"github.com/1f349/mjwt/claims"
+	"github.com/1f349/orchid/database"
 	oUtils "github.com/1f349/orchid/utils"
 	vUtils "github.com/1f349/violet/utils"
 	"github.com/julienschmidt/httprouter"
@@ -22,7 +24,7 @@ type DomainStateValue struct {
 }
 
 type Certificate struct {
-	Id          int       `json:"id"`
+	Id          int64     `json:"id"`
 	AutoRenew   bool      `json:"auto_renew"`
 	Active      bool      `json:"active"`
 	Renewing    bool      `json:"renewing"`
@@ -32,14 +34,11 @@ type Certificate struct {
 	Domains     []string  `json:"domains"`
 }
 
-//go:embed find-owned-certs.sql
-var findOwnedCerts string
-
 // NewApiServer creates and runs a http server containing all the API
 // endpoints for the software
 //
 // `/cert` - edit certificate
-func NewApiServer(listen string, db *sql.DB, signer mjwt.Verifier, domains oUtils.DomainChecker) *http.Server {
+func NewApiServer(listen string, db *database.Queries, signer mjwt.Verifier, domains oUtils.DomainChecker) *http.Server {
 	r := httprouter.New()
 
 	r.GET("/", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
@@ -55,25 +54,28 @@ func NewApiServer(listen string, db *sql.DB, signer mjwt.Verifier, domains oUtil
 		}
 
 		// query database
-		query, err := db.Query(findOwnedCerts)
+		rows, err := db.FindOwnedCerts(context.Background())
 		if err != nil {
+			log.Println("Failed after reading certificates from database: ", err)
 			http.Error(rw, "Database Error", http.StatusInternalServerError)
 			return
 		}
 
-		mOther := make(map[int]*Certificate) // other certificates
-		m := make(map[int]*Certificate)      // certificates owned by this user
+		mOther := make(map[int64]*Certificate) // other certificates
+		m := make(map[int64]*Certificate)      // certificates owned by this user
 
 		// loop over query rows
-		for query.Next() {
-			var c Certificate
-			var d string
-			err := query.Scan(&c.Id, &c.AutoRenew, &c.Active, &c.Renewing, &c.RenewFailed, &c.NotAfter, &c.UpdatedAt, &d)
-			if err != nil {
-				log.Println("Failed to read certificate from database: ", err)
-				http.Error(rw, "Database Error", http.StatusInternalServerError)
-				return
+		for _, row := range rows {
+			c := Certificate{
+				Id:          row.ID,
+				AutoRenew:   row.AutoRenew,
+				Active:      row.Active,
+				Renewing:    row.Renewing,
+				RenewFailed: row.RenewFailed,
+				NotAfter:    row.NotAfter,
+				UpdatedAt:   row.UpdatedAt,
 			}
+			d := row.Domain
 
 			// check in owned map
 			if cert, ok := m[c.Id]; ok {
@@ -105,11 +107,6 @@ func NewApiServer(listen string, db *sql.DB, signer mjwt.Verifier, domains oUtil
 				m[c.Id] = &c
 			}
 		}
-		if err := query.Err(); err != nil {
-			log.Println("Failed after reading certificates from database: ", err)
-			http.Error(rw, "Database Error", http.StatusInternalServerError)
-			return
-		}
 		rw.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(rw).Encode(m)
 	}))
@@ -124,15 +121,20 @@ func NewApiServer(listen string, db *sql.DB, signer mjwt.Verifier, domains oUtil
 	}))
 
 	r.POST("/cert", checkAuthWithPerm(signer, "orchid:cert", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
-		_, err := db.Exec(`INSERT INTO certificates (owner, dns, updated_at) VALUES (?, ?, ?)`, b.Subject, 0, time.Now())
+		err := db.AddCertificate(req.Context(), database.AddCertificateParams{
+			Owner:     b.Subject,
+			Dns:       sql.NullInt64{},
+			NotAfter:  time.Now(),
+			UpdatedAt: time.Now(),
+		})
 		if err != nil {
 			apiError(rw, http.StatusInternalServerError, "Failed to delete certificate")
 			return
 		}
 		rw.WriteHeader(http.StatusAccepted)
 	}))
-	r.DELETE("/cert/:id", checkAuthForCertificate(signer, "orchid:cert", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId uint64) {
-		_, err := db.Exec(`UPDATE certificates SET active = 0 WHERE id = ?`, certId)
+	r.DELETE("/cert/:id", checkAuthForCertificate(signer, "orchid:cert", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId int64) {
+		err := db.RemoveCertificate(req.Context(), certId)
 		if err != nil {
 			apiError(rw, http.StatusInternalServerError, "Failed to delete certificate")
 			return
@@ -194,7 +196,7 @@ func apiError(rw http.ResponseWriter, code int, m string) {
 
 // lookupCertOwner finds the certificate matching the id string and returns the
 // numeric id, owner and possible error, only works for active certificates.
-func checkCertOwner(db *sql.DB, idStr string, b AuthClaims) (uint64, error) {
+func checkCertOwner(db *database.Queries, idStr string, b AuthClaims) (int64, error) {
 	// parse the id
 	rawId, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -202,54 +204,18 @@ func checkCertOwner(db *sql.DB, idStr string, b AuthClaims) (uint64, error) {
 	}
 
 	// run database query
-	row := db.QueryRow(`SELECT id, owner FROM certificates WHERE active = 1 and id = ?`, rawId)
-
-	// scan in result values
-	var id uint64
-	var owner string
-	err = row.Scan(&id, &owner)
+	row, err := db.CheckCertOwner(context.Background(), int64(rawId))
 	if err != nil {
-		return 0, fmt.Errorf("scan error: %w", err)
+		return 0, err
 	}
 
 	// check the owner is the mjwt token subject
-	if b.Subject != owner {
-		return id, fmt.Errorf("not the certificate owner")
+	if b.Subject != row.Owner {
+		return row.ID, fmt.Errorf("not the certificate owner")
 	}
 
 	// it's all valid, return the values
-	return id, nil
-}
-
-// safeTransaction completes a database transaction safely allowing for rollbacks
-// if the callback errors
-func safeTransaction(rw http.ResponseWriter, db *sql.DB, cb func(rw http.ResponseWriter, tx *sql.Tx) error) error {
-	// start a transaction
-	begin, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("failed to begin a transaction")
-	}
-
-	// init defer rollback
-	needsRollback := true
-	defer func() {
-		if needsRollback {
-			_ = begin.Rollback()
-		}
-	}()
-
-	// run main code within the transaction session
-	err = cb(rw, begin)
-	if err != nil {
-		return err
-	}
-
-	// clear the rollback flag and commit the transaction
-	needsRollback = false
-	if begin.Commit() != nil {
-		return fmt.Errorf("failed to commit a transaction")
-	}
-	return nil
+	return row.ID, nil
 }
 
 // getDomainOwnershipClaims returns the domains marked as owned from PermStorage,
