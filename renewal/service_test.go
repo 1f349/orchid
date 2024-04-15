@@ -154,7 +154,6 @@ func TestPebbleRenewal(t *testing.T) {
 
 	for _, i := range tests {
 		t.Run(i.name, func(t *testing.T) {
-			//t.Parallel()
 			service, db2 := setupPebbleTest(t, serverTls)
 			//goland:noinspection SqlWithoutWhere
 			_, err := db2.Exec("DELETE FROM certificate_domains")
