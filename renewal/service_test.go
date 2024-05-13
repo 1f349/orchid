@@ -95,6 +95,7 @@ func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
 			assert.NoError(tb, command.Process.Kill())
 		}
 		dnsServer.Shutdown()
+		assert.NoError(tb, os.RemoveAll(pebbleTmp))
 	}
 }
 
@@ -134,6 +135,11 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) (*Service, *sql.D
 	return service, db2
 }
 
+func deconstructPebbleTest(t *testing.T, service *Service) {
+	assert.NoError(t, os.RemoveAll(service.certDir))
+	assert.NoError(t, os.RemoveAll(service.keyDir))
+}
+
 func TestPebbleRenewal(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping renewal tests in short mode")
@@ -155,6 +161,7 @@ func TestPebbleRenewal(t *testing.T) {
 	for _, i := range tests {
 		t.Run(i.name, func(t *testing.T) {
 			service, db2 := setupPebbleTest(t, serverTls)
+			defer deconstructPebbleTest(t, service)
 			//goland:noinspection SqlWithoutWhere
 			_, err := db2.Exec("DELETE FROM certificate_domains")
 			assert.NoError(t, err)
