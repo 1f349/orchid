@@ -3,9 +3,9 @@ package http_acme
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/1f349/orchid/logger"
 	"github.com/go-acme/lego/v4/challenge"
 	"gopkg.in/yaml.v3"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -146,12 +146,12 @@ func (h *HttpAcmeProvider) saveLoginTokens() {
 	// acme login token
 	openTokens, err := os.Create(h.tokenFile)
 	if err != nil {
-		log.Println("[Orchid] Failed to open token file:", err)
+		logger.Logger.Info("[Orchid] Failed to open token file:", err)
 	}
 	defer openTokens.Close()
 
 	err = yaml.NewEncoder(openTokens).Encode(AcmeLogin{Access: h.accessToken, Refresh: h.refreshToken})
 	if err != nil {
-		log.Println("[Orchid] Failed to write tokens file:", err)
+		logger.Logger.Info("[Orchid] Failed to write tokens file:", err)
 	}
 }

@@ -18,7 +18,6 @@ import (
 	"github.com/mrmelon54/certgen"
 	"github.com/stretchr/testify/assert"
 	"go/build"
-	"log"
 	"math/big"
 	"net"
 	"os"
@@ -53,7 +52,7 @@ func TestService_resolveCACertificate(t *testing.T) {
 }
 
 func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
-	log.Println("Running pebble")
+	Logger.Info("Running pebble")
 	pebbleTmp, err := os.MkdirTemp("", "pebble")
 	assert.NoError(tb, err)
 	assert.NoError(tb, os.WriteFile(filepath.Join(pebbleTmp, "pebble-config.json"), pebble.RawConfig, os.ModePerm))
@@ -83,7 +82,7 @@ func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
 	command.Dir = pebbleTmp
 
 	if command.Start() != nil {
-		log.Println("Installing pebble")
+		Logger.Info("Installing pebble")
 		instCmd := exec.Command("go", "install", "github.com/letsencrypt/pebble/cmd/pebble@latest")
 		assert.NoError(tb, instCmd.Run(), "Failed to start pebble make sure it is installed... go install github.com/letsencrypt/pebble/cmd/pebble@latest")
 		assert.NoError(tb, command.Start(), "failed to start pebble again")
@@ -107,7 +106,7 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) (*Service, *sql.D
 	db2, err := sql.Open("sqlite3", dbFile)
 	assert.NoError(t, err)
 
-	log.Println("DB File:", dbFile)
+	Logger.Info("DB File:", dbFile)
 
 	certDir, err := os.MkdirTemp("", "orchid-certs")
 	keyDir, err := os.MkdirTemp("", "orchid-keys")

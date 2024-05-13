@@ -6,6 +6,7 @@ import (
 	"github.com/1f349/mjwt"
 	"github.com/1f349/orchid"
 	httpAcme "github.com/1f349/orchid/http-acme"
+	"github.com/1f349/orchid/logger"
 	"github.com/1f349/orchid/renewal"
 	"github.com/1f349/orchid/servers"
 	"github.com/1f349/violet/utils"
@@ -33,19 +34,19 @@ func (s *serveCmd) Usage() string {
 }
 
 func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	log.Println("[Orchid] Starting...")
+	logger.Logger.Info("[Orchid] Starting...")
 
 	if s.configPath == "" {
-		log.Println("[Orchid] Error: config flag is missing")
+		logger.Logger.Info("[Orchid] Error: config flag is missing")
 		return subcommands.ExitUsageError
 	}
 
 	openConf, err := os.Open(s.configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Println("[Orchid] Error: missing config file")
+			logger.Logger.Info("[Orchid] Error: missing config file")
 		} else {
-			log.Println("[Orchid] Error: open config file: ", err)
+			logger.Logger.Info("[Orchid] Error: open config file: ", err)
 		}
 		return subcommands.ExitFailure
 	}
@@ -53,7 +54,7 @@ func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 	var conf startUpConfig
 	err = yaml.NewDecoder(openConf).Decode(&conf)
 	if err != nil {
-		log.Println("[Orchid] Error: invalid config file: ", err)
+		logger.Logger.Info("[Orchid] Error: invalid config file: ", err)
 		return subcommands.ExitFailure
 	}
 
@@ -88,7 +89,7 @@ func normalLoad(conf startUpConfig, wd string) {
 		log.Fatal("[Orchid] Service Error:", err)
 	}
 	srv := servers.NewApiServer(conf.Listen, db, mJwtVerify, conf.Domains)
-	log.Printf("[API] Starting API server on: '%s'\n", srv.Addr)
+	logger.Logger.Info("Starting API server", "listen", srv.Addr)
 	go utils.RunBackgroundHttp("API", srv)
 
 	exit_reload.ExitReload("Violet", func() {}, func() {

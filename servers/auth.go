@@ -4,9 +4,9 @@ import (
 	"github.com/1f349/mjwt"
 	"github.com/1f349/mjwt/auth"
 	"github.com/1f349/orchid/database"
+	"github.com/1f349/orchid/logger"
 	vUtils "github.com/1f349/violet/utils"
 	"github.com/julienschmidt/httprouter"
-	"log"
 	"net/http"
 )
 
@@ -63,7 +63,7 @@ func checkAuthForCertificate(verify mjwt.Verifier, perm string, db *database.Que
 				return
 			}
 			apiError(rw, http.StatusInsufficientStorage, "Database error")
-			log.Println("[API] Failed to find certificate owner: ", err)
+			logger.Logger.Info("[API] Failed to find certificate owner: ", err)
 			return
 		}
 

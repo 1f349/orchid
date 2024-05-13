@@ -9,10 +9,10 @@ import (
 	"github.com/1f349/mjwt"
 	"github.com/1f349/mjwt/claims"
 	"github.com/1f349/orchid/database"
+	"github.com/1f349/orchid/logger"
 	oUtils "github.com/1f349/orchid/utils"
 	vUtils "github.com/1f349/violet/utils"
 	"github.com/julienschmidt/httprouter"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -56,7 +56,7 @@ func NewApiServer(listen string, db *database.Queries, signer mjwt.Verifier, dom
 		// query database
 		rows, err := db.FindOwnedCerts(context.Background())
 		if err != nil {
-			log.Println("Failed after reading certificates from database: ", err)
+			logger.Logger.Info("Failed after reading certificates from database: ", err)
 			http.Error(rw, "Database Error", http.StatusInternalServerError)
 			return
 		}
@@ -86,7 +86,7 @@ func NewApiServer(listen string, db *database.Queries, signer mjwt.Verifier, dom
 			// get etld+1
 			topFqdn, found := vUtils.GetTopFqdn(d)
 			if !found {
-				log.Println("Invalid domain found: ", d)
+				logger.Logger.Info("Invalid domain found: ", d)
 				http.Error(rw, "Database Error", http.StatusInternalServerError)
 				return
 			}

@@ -20,7 +20,6 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns/duckdns"
 	"github.com/go-acme/lego/v4/providers/dns/namesilo"
 	"github.com/go-acme/lego/v4/registration"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -121,7 +120,7 @@ func NewService(wg *sync.WaitGroup, db *database.Queries, httpAcme challenge.Pro
 
 // Shutdown the renewal service.
 func (s *Service) Shutdown() {
-	log.Println("[Renewal] Shutting down certificate renewal service")
+	Logger.Info("Shutting down certificate renewal service")
 	close(s.certDone)
 }
 
@@ -205,20 +204,20 @@ func (s *Service) renewalRoutine(wg *sync.WaitGroup) {
 	// Upon leaving the function stop the ticker and clear the WaitGroup.
 	defer func() {
 		s.certTicker.Stop()
-		log.Println("[Renewal] Stopped certificate renewal service")
+		Logger.Info("Stopped certificate renewal service")
 		wg.Done()
 	}()
 
 	// Do an initial check and refuse to start if any errors occur.
-	log.Println("[Renewal] Doing quick certificate check before starting...")
+	Logger.Info("Doing quick certificate check before starting...")
 	err := s.renewalCheck()
 	if err != nil {
-		log.Println("[Renewal] Certificate check, should not error first try: ", err)
+		Logger.Info("Certificate check, should not error first try: ", err)
 		return
 	}
 
 	// Logging or something
-	log.Println("[Renewal] Initial check complete, continually checking every 10 minutes...")
+	Logger.Info("Initial check complete, continually checking every 10 minutes...")
 
 	// Main loop
 	for {
@@ -232,7 +231,7 @@ func (s *Service) renewalRoutine(wg *sync.WaitGroup) {
 				// run a renewal check and log errors, but ignore ErrAlreadyRenewing
 				err := s.renewalCheck()
 				if err != nil && !errors.Is(err, ErrAlreadyRenewing) {
-					log.Println("[Renewal] Certificate check, an error occurred: ", err)
+					Logger.Info("Certificate check, an error occurred: ", err)
 				}
 			}()
 		}
@@ -265,7 +264,7 @@ func (s *Service) renewalCheck() error {
 	}
 
 	// renew succeeded
-	log.Printf("[Renewal] Updated certificate %d successfully\n", localData.id)
+	Logger.Info("Updated certificate successfully", "id", localData.id)
 
 	return nil
 }
@@ -338,7 +337,7 @@ func (s *Service) setupLegoClient() (*lego.Client, error) {
 // getDnsProvider loads a DNS challenge provider using the provided name and
 // token
 func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error) {
-	log.Printf("[Renewal] Loading dns provider: %s with token %s*****\n", name, token[:3])
+	Logger.Info("Loading dns provider: %s with token %s*****\n", name, token[:3])
 	switch name {
 	case "duckdns":
 		return duckdns.NewDNSProviderConfig(&duckdns.Config{
@@ -453,7 +452,7 @@ func (s *Service) renewCertInternal(localData *localCertData) (*x509.Certificate
 		// set up the dns provider used during tests and disable propagation as no dns
 		// will validate these tests
 		dnsAddr := testDnsOptions.GetDnsAddrs()
-		log.Printf("Using testDnsOptions with DNS server: %v\n", dnsAddr)
+		Logger.Info("Using testDnsOptions with DNS server", "addr", dnsAddr)
 		_ = s.client.Challenge.SetDNS01Provider(testDnsOptions, dns01.AddRecursiveNameservers(dnsAddr), dns01.DisableCompletePropagationRequirement())
 	} else if localData.dns.name.Valid && localData.dns.token.Valid {
 		// if the dns name and token are "valid" meaning non-null in this case
@@ -500,7 +499,7 @@ func (s *Service) setRenewing(id int64, renewing, failed bool) {
 		ID:          id,
 	})
 	if err != nil {
-		log.Printf("[Renewal] Failed to set renewing/failed mode in database %d: %s\n", id, err)
+		Logger.Warn("Failed to set renewing/failed mode in database", "id", id, "err", err)
 	}
 }
 
