@@ -146,12 +146,12 @@ func (h *HttpAcmeProvider) saveLoginTokens() {
 	// acme login token
 	openTokens, err := os.Create(h.tokenFile)
 	if err != nil {
-		logger.Logger.Info("[Orchid] Failed to open token file:", err)
+		logger.Logger.Info("[Orchid] Failed to open token file:", "err", err)
 	}
 	defer openTokens.Close()
 
 	err = yaml.NewEncoder(openTokens).Encode(AcmeLogin{Access: h.accessToken, Refresh: h.refreshToken})
 	if err != nil {
-		logger.Logger.Info("[Orchid] Failed to write tokens file:", err)
+		logger.Logger.Info("[Orchid] Failed to write tokens file:", "err", err)
 	}
 }

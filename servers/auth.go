@@ -63,7 +63,7 @@ func checkAuthForCertificate(verify mjwt.Verifier, perm string, db *database.Que
 				return
 			}
 			apiError(rw, http.StatusInsufficientStorage, "Database error")
-			logger.Logger.Info("[API] Failed to find certificate owner: ", err)
+			logger.Logger.Info("[API] Failed to find certificate owner:", "err", err)
 			return
 		}
 

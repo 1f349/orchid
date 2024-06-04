@@ -46,7 +46,7 @@ func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 		if os.IsNotExist(err) {
 			logger.Logger.Info("[Orchid] Error: missing config file")
 		} else {
-			logger.Logger.Info("[Orchid] Error: open config file: ", err)
+			logger.Logger.Info("[Orchid] Error: open config file: ", "err", err)
 		}
 		return subcommands.ExitFailure
 	}
@@ -54,7 +54,7 @@ func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 	var conf startUpConfig
 	err = yaml.NewDecoder(openConf).Decode(&conf)
 	if err != nil {
-		logger.Logger.Info("[Orchid] Error: invalid config file: ", err)
+		logger.Logger.Info("[Orchid] Error: invalid config file: ", "err", err)
 		return subcommands.ExitFailure
 	}
 

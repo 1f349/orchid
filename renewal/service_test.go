@@ -106,7 +106,7 @@ func setupPebbleTest(t *testing.T, serverTls *certgen.CertGen) (*Service, *sql.D
 	db2, err := sql.Open("sqlite3", dbFile)
 	assert.NoError(t, err)
 
-	Logger.Info("DB File:", dbFile)
+	Logger.Info("DB File:", "db", dbFile)
 
 	certDir, err := os.MkdirTemp("", "orchid-certs")
 	keyDir, err := os.MkdirTemp("", "orchid-keys")

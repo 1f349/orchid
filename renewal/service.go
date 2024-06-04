@@ -212,7 +212,7 @@ func (s *Service) renewalRoutine(wg *sync.WaitGroup) {
 	Logger.Info("Doing quick certificate check before starting...")
 	err := s.renewalCheck()
 	if err != nil {
-		Logger.Info("Certificate check, should not error first try: ", err)
+		Logger.Info("Certificate check, should not error first try: ", "err", err)
 		return
 	}
 
@@ -231,7 +231,7 @@ func (s *Service) renewalRoutine(wg *sync.WaitGroup) {
 				// run a renewal check and log errors, but ignore ErrAlreadyRenewing
 				err := s.renewalCheck()
 				if err != nil && !errors.Is(err, ErrAlreadyRenewing) {
-					Logger.Info("Certificate check, an error occurred: ", err)
+					Logger.Info("Certificate check, an error occurred: ", "err", err)
 				}
 			}()
 		}
@@ -337,7 +337,7 @@ func (s *Service) setupLegoClient() (*lego.Client, error) {
 // getDnsProvider loads a DNS challenge provider using the provided name and
 // token
 func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error) {
-	Logger.Info("Loading dns provider: %s with token %s*****\n", name, token[:3])
+	Logger.Info("Loading dns provider", "name", name, "token", token[:3]+"*****")
 	switch name {
 	case "duckdns":
 		return duckdns.NewDNSProviderConfig(&duckdns.Config{
