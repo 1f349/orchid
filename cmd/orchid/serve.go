@@ -90,7 +90,7 @@ func normalLoad(conf startUpConfig, wd string) {
 	}
 	srv := servers.NewApiServer(conf.Listen, db, mJwtVerify, conf.Domains)
 	logger.Logger.Info("Starting API server", "listen", srv.Addr)
-	go utils.RunBackgroundHttp("API", srv)
+	go utils.RunBackgroundHttp(logger.Logger, srv)
 
 	exit_reload.ExitReload("Violet", func() {}, func() {
 		// stop renewal service and api server
