@@ -14,6 +14,7 @@ import (
 	vUtils "github.com/1f349/violet/utils"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 )
@@ -46,6 +47,7 @@ func NewApiServer(listen string, db *database.Queries, signer mjwt.Verifier, dom
 	})
 
 	// Endpoint for grabbing owned certificates
+	// TODO(melon): rewrite this endpoint to prevent using a map then converting into a slice later
 	r.GET("/owned", checkAuthWithPerm(signer, "orchid:cert", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
 		domains := getDomainOwnershipClaims(b.Claims.Perms)
 		domainMap := make(map[string]bool)
@@ -107,8 +109,18 @@ func NewApiServer(listen string, db *database.Queries, signer mjwt.Verifier, dom
 				m[c.Id] = &c
 			}
 		}
+
+		// remap into a slice
+		arr := make([]*Certificate, 0, len(m))
+		slices.SortFunc(arr, func(a, b *Certificate) int {
+			return int(a.Id - b.Id)
+		})
+		for _, v := range m {
+			arr = append(arr, v)
+		}
+
 		rw.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(rw).Encode(m)
+		_ = json.NewEncoder(rw).Encode(arr)
 	}))
 
 	// Endpoint for looking up a certificate
