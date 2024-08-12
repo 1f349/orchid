@@ -76,8 +76,8 @@ func normalLoad(conf startUpConfig, wd string) {
 		log.Fatal("[Orchid] Failed to open database:", err)
 	}
 
-	certDir := filepath.Join(wd, "certs")
-	keyDir := filepath.Join(wd, "keys")
+	certDir := filepath.Join(wd, "renewal-certs")
+	keyDir := filepath.Join(wd, "renewal-keys")
 
 	wg := &sync.WaitGroup{}
 	acmeProv, err := httpAcme.NewHttpAcmeProvider(filepath.Join(wd, "tokens.yml"), conf.Acme.PresentUrl, conf.Acme.CleanUpUrl, conf.Acme.RefreshUrl)
