@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/1f349/mjwt"
-	"github.com/1f349/mjwt/claims"
+	"github.com/1f349/mjwt/auth"
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/logger"
 	oUtils "github.com/1f349/orchid/utils"
@@ -39,7 +39,7 @@ type Certificate struct {
 // endpoints for the software
 //
 // `/cert` - edit certificate
-func NewApiServer(listen string, db *database.Queries, signer mjwt.Verifier, domains oUtils.DomainChecker) *http.Server {
+func NewApiServer(listen string, db *database.Queries, signer *mjwt.KeyStore, domains oUtils.DomainChecker) *http.Server {
 	r := httprouter.New()
 
 	r.GET("/", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
@@ -236,7 +236,7 @@ func checkCertOwner(db *database.Queries, idStr string, b AuthClaims) (int64, er
 
 // getDomainOwnershipClaims returns the domains marked as owned from PermStorage,
 // they match `domain:owns=<fqdn>` where fqdn will be returned
-func getDomainOwnershipClaims(perms *claims.PermStorage) []string {
+func getDomainOwnershipClaims(perms *auth.PermStorage) []string {
 	a := perms.Search("domain:owns=*")
 	for i := range a {
 		a[i] = a[i][len("domain:owns="):]
@@ -246,7 +246,7 @@ func getDomainOwnershipClaims(perms *claims.PermStorage) []string {
 
 // validateDomainOwnershipClaims validates if the claims contain the
 // `domain:owns=<fqdn>` field with the matching top level domain
-func validateDomainOwnershipClaims(a string, perms *claims.PermStorage) bool {
+func validateDomainOwnershipClaims(a string, perms *auth.PermStorage) bool {
 	if fqdn, ok := vUtils.GetTopFqdn(a); ok {
 		if perms.Has("domain:owns=" + fqdn) {
 			return true

@@ -12,7 +12,7 @@ import (
 	"net/http"
 )
 
-func certDomainManageGET(db *database.Queries, signer mjwt.Verifier) httprouter.Handle {
+func certDomainManageGET(db *database.Queries, signer *mjwt.KeyStore) httprouter.Handle {
 	return checkAuthForCertificate(signer, "orchid:cert:edit", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId int64) {
 		rows, err := db.GetDomainStatesForCert(context.Background(), certId)
 		if err != nil {
@@ -30,7 +30,7 @@ func certDomainManageGET(db *database.Queries, signer mjwt.Verifier) httprouter.
 	})
 }
 
-func certDomainManagePUTandDELETE(db *database.Queries, signer mjwt.Verifier, domains utils.DomainChecker) httprouter.Handle {
+func certDomainManagePUTandDELETE(db *database.Queries, signer *mjwt.KeyStore, domains utils.DomainChecker) httprouter.Handle {
 	return checkAuthForCertificate(signer, "orchid:cert:edit", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId int64) {
 		// check request type
 		isAdd := req.Method == http.MethodPut

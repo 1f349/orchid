@@ -1,12 +1,11 @@
 package http_acme
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
 	"fmt"
 	"github.com/1f349/mjwt"
 	"github.com/1f349/mjwt/auth"
-	"github.com/1f349/mjwt/claims"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -31,7 +30,7 @@ func makeQuickHttpProv(accessToken string, ft http.RoundTripper) *HttpAcmeProvid
 // fakeTransport captures any requests and responds with a successful answer if
 // applicable
 type fakeTransport struct {
-	verify mjwt.Verifier
+	verify *mjwt.KeyStore
 	req    *http.Request
 	clean  bool
 }
@@ -61,19 +60,17 @@ func (f *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestHttpAcmeProvider_Present(t *testing.T) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.NoError(t, err)
-
 	// perms
-	ps := claims.NewPermStorage()
+	ps := auth.NewPermStorage()
 	ps.Set("test:acme:present")
 
 	// signer
-	signer := mjwt.NewMJwtSigner("Test", privateKey)
+	signer, err := mjwt.NewIssuer("Test", uuid.NewString(), jwt.SigningMethodRS512)
+	assert.NoError(t, err)
 	accessToken, err := signer.GenerateJwt("", "", nil, 5*time.Minute, auth.AccessTokenClaims{Perms: ps})
 	assert.NoError(t, err)
 
-	ft := &fakeTransport{verify: signer}
+	ft := &fakeTransport{verify: signer.KeyStore()}
 	prov := makeQuickHttpProv(accessToken, ft)
 	assert.NoError(t, prov.Present("example.com", "1234", "1234abcd"))
 	assert.Equal(t, *ft.req.URL, url.URL{
@@ -84,19 +81,17 @@ func TestHttpAcmeProvider_Present(t *testing.T) {
 }
 
 func TestHttpAcmeProvider_CleanUp(t *testing.T) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.NoError(t, err)
-
 	// perms
-	ps := claims.NewPermStorage()
+	ps := auth.NewPermStorage()
 	ps.Set("test:acme:clean")
 
 	// signer
-	signer := mjwt.NewMJwtSigner("Test", privateKey)
+	signer, err := mjwt.NewIssuer("Test", uuid.NewString(), jwt.SigningMethodRS512)
+	assert.NoError(t, err)
 	accessToken, err := signer.GenerateJwt("", "", nil, 5*time.Minute, auth.AccessTokenClaims{Perms: ps})
 	assert.NoError(t, err)
 
-	ft := &fakeTransport{verify: signer, clean: true}
+	ft := &fakeTransport{verify: signer.KeyStore(), clean: true}
 	prov := makeQuickHttpProv(accessToken, ft)
 	assert.NoError(t, prov.CleanUp("example.com", "1234", "1234abcd"))
 	assert.Equal(t, *ft.req.URL, url.URL{
