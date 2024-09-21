@@ -14,6 +14,7 @@ import (
 	"github.com/1f349/violet/utils"
 	"github.com/google/subcommands"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/mrmelon54/cdfs"
 	"github.com/mrmelon54/exit-reload"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -47,7 +48,7 @@ func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 		if os.IsNotExist(err) {
 			logger.Logger.Error("Missing config file")
 		} else {
-			logger.Logger.Error("Open config file: ", "err", err)
+			logger.Logger.Error("Open config file", "err", err)
 		}
 		return subcommands.ExitFailure
 	}
@@ -55,7 +56,7 @@ func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 	var conf startUpConfig
 	err = yaml.NewDecoder(openConf).Decode(&conf)
 	if err != nil {
-		logger.Logger.Error("Invalid config file: ", "err", err)
+		logger.Logger.Error("Invalid config file", "err", err)
 		return subcommands.ExitFailure
 	}
 
@@ -64,7 +65,7 @@ func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 	return subcommands.ExitSuccess
 }
 
-//go:embed mail-templates/*.go.*
+//go:embed mail-templates/*
 var mailTemplates embed.FS
 
 func normalLoad(conf startUpConfig, wd string) {
@@ -74,7 +75,7 @@ func normalLoad(conf startUpConfig, wd string) {
 		logger.Logger.Fatal("Failed to load MJWT verifier public key from file", "path", filepath.Join(wd, "keys"), "err", err)
 	}
 
-	mail, err := simplemail.New(&conf.Mail.Mail, mailTemplates)
+	mail, err := simplemail.New(&conf.Mail.Mail, cdfs.CD(mailTemplates, "mail-templates"))
 	if err != nil {
 		logger.Logger.Fatal("Failed to load email sender", "err", err)
 	}
