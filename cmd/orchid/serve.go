@@ -64,7 +64,7 @@ func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 	return subcommands.ExitSuccess
 }
 
-//go:embed mail-templates/*.go.{html,txt}
+//go:embed mail-templates/*.go.*
 var mailTemplates embed.FS
 
 func normalLoad(conf startUpConfig, wd string) {
@@ -74,7 +74,7 @@ func normalLoad(conf startUpConfig, wd string) {
 		logger.Logger.Fatal("Failed to load MJWT verifier public key from file", "path", filepath.Join(wd, "keys"), "err", err)
 	}
 
-	mail, err := simplemail.New(&conf.Mail.Mail, "mail", mailTemplates)
+	mail, err := simplemail.New(&conf.Mail.Mail, mailTemplates)
 	if err != nil {
 		logger.Logger.Fatal("Failed to load email sender", "err", err)
 	}

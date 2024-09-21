@@ -10,7 +10,7 @@ type startUpConfig struct {
 	Acme    acmeConfig                `yaml:"acme"`
 	LE      renewal.LetsEncryptConfig `yaml:"letsEncrypt"`
 	Domains []string                  `yaml:"domains"`
-	Mail    mailConfig                `json:"mail"`
+	Mail    mailConfig                `yaml:"mail"`
 }
 
 type acmeConfig struct {
@@ -21,5 +21,5 @@ type acmeConfig struct {
 
 type mailConfig struct {
 	simplemail.Mail
-	To simplemail.FromAddress `json:"to"`
+	To simplemail.FromAddress `yaml:"to"`
 }

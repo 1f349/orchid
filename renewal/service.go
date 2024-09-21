@@ -142,7 +142,7 @@ func (s *Service) sendErrorEmail(templateName, subject string, data map[string]a
 	data["error"] = err
 
 	// send email and listen for errors
-	mailErr := s.mail.Send(templateName, subject, s.mailTo.Address, data)
+	mailErr := s.mail.Send(templateName, subject, s.mailTo.ToMailAddress(), data)
 	if mailErr != nil {
 		return fmt.Errorf("failed to send error email for: %w because: %w", err, mailErr)
 	}
