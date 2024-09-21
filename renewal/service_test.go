@@ -10,8 +10,10 @@ import (
 	"encoding/pem"
 	"fmt"
 	"github.com/1f349/orchid"
+	"github.com/1f349/orchid/logger"
 	"github.com/1f349/orchid/pebble"
 	"github.com/1f349/orchid/test"
+	"github.com/charmbracelet/log"
 	"github.com/go-acme/lego/v4/lego"
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
@@ -71,7 +73,7 @@ func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
 	assert.NoError(tb, os.WriteFile(filepath.Join(pebbleTmp, "certs", "localhost", "cert.pem"), serverTls.GetCertPem(), os.ModePerm))
 	assert.NoError(tb, os.WriteFile(filepath.Join(pebbleTmp, "certs", "localhost", "key.pem"), serverTls.GetKeyPem(), os.ModePerm))
 
-	dnsServer := test.MakeFakeDnsProv("127.0.0.34:5053") // 127.0.0.34:53
+	dnsServer := test.MakeFakeDnsProv("127.243.243.34:5053") // 127.243.243.34:53
 	dnsServer.AddRecursiveSOA("example.test.")
 	go dnsServer.Start()
 	testDnsOptions = dnsServer
@@ -140,6 +142,8 @@ func deconstructPebbleTest(t *testing.T, service *Service) {
 }
 
 func TestPebbleRenewal(t *testing.T) {
+	logger.Logger.SetLevel(log.DebugLevel)
+
 	if testing.Short() {
 		t.Skip("Skipping renewal tests in short mode")
 	}

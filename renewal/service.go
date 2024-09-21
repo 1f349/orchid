@@ -201,6 +201,8 @@ var ErrAlreadyRenewing = errors.New("already renewing")
 // renewalRoutine is the main loop which makes used of certTicker to constantly
 // check if the existing certificates are up-to-date.
 func (s *Service) renewalRoutine(wg *sync.WaitGroup) {
+	Logger.Debug("Starting renewalRoutine")
+
 	// Upon leaving the function stop the ticker and clear the WaitGroup.
 	defer func() {
 		s.certTicker.Stop()
@@ -226,6 +228,8 @@ func (s *Service) renewalRoutine(wg *sync.WaitGroup) {
 			// Exit if certDone has closed
 			return
 		case <-s.certTicker.C:
+			Logger.Debug("Ticking certificate renewal")
+
 			// Start a new check in a separate routine
 			go func() {
 				// run a renewal check and log errors, but ignore ErrAlreadyRenewing
@@ -246,6 +250,8 @@ func (s *Service) renewalCheck() error {
 	}
 	defer s.renewLock.Unlock()
 
+	Logger.Debug("Running renewalCheck")
+
 	// check for running out certificates in the database
 	localData, err := s.findNextCertificateToRenew()
 	if err != nil {
@@ -254,12 +260,14 @@ func (s *Service) renewalCheck() error {
 
 	// no certificates to update
 	if localData == nil {
+		Logger.Debug("No certificates to update")
 		return nil
 	}
 
 	// renew the certificate from the collected data
 	err = s.renewCert(localData)
 	if err != nil {
+		Logger.Debug("Failed to renew certificate", "err", err)
 		return err
 	}
 
@@ -392,6 +400,7 @@ func (s *Service) getPrivateKey(id int64) (*rsa.PrivateKey, error) {
 func (s *Service) renewCert(localData *localCertData) error {
 	// database synchronous state
 	s.setRenewing(localData.id, true, false)
+	Logger.Debug("No certificates to update")
 
 	// run internal renewal code and log errors
 	cert, certBytes, err := s.renewCertInternal(localData)

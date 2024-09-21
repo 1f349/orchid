@@ -14,7 +14,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mrmelon54/exit-reload"
 	"gopkg.in/yaml.v3"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -67,13 +66,13 @@ func normalLoad(conf startUpConfig, wd string) {
 	// load the MJWT RSA public key from a pem encoded file
 	mJwtVerify, err := mjwt.NewKeyStoreFromPath(filepath.Join(wd, "keys"))
 	if err != nil {
-		log.Fatalf("[Orchid] Failed to load MJWT verifier public key from file '%s': %s", filepath.Join(wd, "keys"), err)
+		logger.Logger.Fatal("Failed to load MJWT verifier public key from file", "path", filepath.Join(wd, "keys"), "err", err)
 	}
 
 	// open sqlite database
 	db, err := orchid.InitDB(filepath.Join(wd, "orchid.db.sqlite"))
 	if err != nil {
-		log.Fatal("[Orchid] Failed to open database:", err)
+		logger.Logger.Fatal("Failed to open database", "err", err)
 	}
 
 	certDir := filepath.Join(wd, "renewal-certs")
@@ -82,11 +81,11 @@ func normalLoad(conf startUpConfig, wd string) {
 	wg := &sync.WaitGroup{}
 	acmeProv, err := httpAcme.NewHttpAcmeProvider(filepath.Join(wd, "tokens.yml"), conf.Acme.PresentUrl, conf.Acme.CleanUpUrl, conf.Acme.RefreshUrl)
 	if err != nil {
-		log.Fatal("[Orchid] HTTP Acme Error:", err)
+		logger.Logger.Fatal("HTTP Acme Error", "err", err)
 	}
 	renewalService, err := renewal.NewService(wg, db, acmeProv, conf.LE, certDir, keyDir)
 	if err != nil {
-		log.Fatal("[Orchid] Service Error:", err)
+		logger.Logger.Fatal("Service Error", "err", err)
 	}
 	srv := servers.NewApiServer(conf.Listen, db, mJwtVerify, conf.Domains)
 	logger.Logger.Info("Starting API server", "listen", srv.Addr)
