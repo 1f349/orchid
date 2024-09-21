@@ -214,8 +214,7 @@ func (s *Service) renewalRoutine(wg *sync.WaitGroup) {
 	Logger.Info("Doing quick certificate check before starting...")
 	err := s.renewalCheck()
 	if err != nil {
-		Logger.Info("Certificate check, should not error first try: ", "err", err)
-		return
+		Logger.Info("Certificate check, should not error first try", "err", err)
 	}
 
 	// Logging or something
@@ -235,7 +234,7 @@ func (s *Service) renewalRoutine(wg *sync.WaitGroup) {
 				// run a renewal check and log errors, but ignore ErrAlreadyRenewing
 				err := s.renewalCheck()
 				if err != nil && !errors.Is(err, ErrAlreadyRenewing) {
-					Logger.Info("Certificate check, an error occurred: ", "err", err)
+					Logger.Info("Certificate check, an error occurred", "err", err)
 				}
 			}()
 		}
