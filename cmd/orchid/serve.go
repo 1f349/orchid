@@ -33,19 +33,19 @@ func (s *serveCmd) Usage() string {
 }
 
 func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	logger.Logger.Info("[Orchid] Starting...")
+	logger.Logger.Info("Starting...")
 
 	if s.configPath == "" {
-		logger.Logger.Info("[Orchid] Error: config flag is missing")
+		logger.Logger.Error("Config flag is missing")
 		return subcommands.ExitUsageError
 	}
 
 	openConf, err := os.Open(s.configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			logger.Logger.Info("[Orchid] Error: missing config file")
+			logger.Logger.Error("Missing config file")
 		} else {
-			logger.Logger.Info("[Orchid] Error: open config file: ", "err", err)
+			logger.Logger.Error("Open config file: ", "err", err)
 		}
 		return subcommands.ExitFailure
 	}
@@ -53,7 +53,7 @@ func (s *serveCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 	var conf startUpConfig
 	err = yaml.NewDecoder(openConf).Decode(&conf)
 	if err != nil {
-		logger.Logger.Info("[Orchid] Error: invalid config file: ", "err", err)
+		logger.Logger.Error("Invalid config file: ", "err", err)
 		return subcommands.ExitFailure
 	}
 
