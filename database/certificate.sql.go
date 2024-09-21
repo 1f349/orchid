@@ -75,7 +75,7 @@ FROM certificates AS cert
 WHERE cert.active = 1
   AND (cert.auto_renew = 1 OR cert.not_after IS NULL)
   AND cert.renewing = 0
-  AND cert.renew_failed = 0
+  AND DATETIME() > DATETIME(cert.renew_retry)
   AND (cert.not_after IS NULL OR DATETIME(cert.not_after, 'utc', '-30 days') < DATETIME())
 ORDER BY cert.temp_parent, cert.not_after DESC NULLS FIRST
 LIMIT 1
@@ -107,7 +107,7 @@ SELECT cert.id,
        cert.auto_renew,
        cert.active,
        cert.renewing,
-       cert.renew_failed,
+       cert.renew_retry,
        cert.not_after,
        cert.updated_at,
        certificate_domains.domain
@@ -116,14 +116,14 @@ FROM certificates AS cert
 `
 
 type FindOwnedCertsRow struct {
-	ID          int64     `json:"id"`
-	AutoRenew   bool      `json:"auto_renew"`
-	Active      bool      `json:"active"`
-	Renewing    bool      `json:"renewing"`
-	RenewFailed bool      `json:"renew_failed"`
-	NotAfter    time.Time `json:"not_after"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	Domain      string    `json:"domain"`
+	ID         int64     `json:"id"`
+	AutoRenew  bool      `json:"auto_renew"`
+	Active     bool      `json:"active"`
+	Renewing   bool      `json:"renewing"`
+	RenewRetry time.Time `json:"renew_retry"`
+	NotAfter   time.Time `json:"not_after"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Domain     string    `json:"domain"`
 }
 
 func (q *Queries) FindOwnedCerts(ctx context.Context) ([]FindOwnedCertsRow, error) {
@@ -140,7 +140,7 @@ func (q *Queries) FindOwnedCerts(ctx context.Context) ([]FindOwnedCertsRow, erro
 			&i.AutoRenew,
 			&i.Active,
 			&i.Renewing,
-			&i.RenewFailed,
+			&i.RenewRetry,
 			&i.NotAfter,
 			&i.UpdatedAt,
 			&i.Domain,
@@ -169,10 +169,21 @@ func (q *Queries) RemoveCertificate(ctx context.Context, id int64) error {
 	return err
 }
 
+const setRetryFlag = `-- name: SetRetryFlag :exec
+UPDATE certificates
+SET renew_retry = DATETIME('now', '+1 day')
+WHERE id = ?
+`
+
+func (q *Queries) SetRetryFlag(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, setRetryFlag, id)
+	return err
+}
+
 const updateCertAfterRenewal = `-- name: UpdateCertAfterRenewal :exec
 UPDATE certificates
-SET renewing    = 0,
-    renew_failed=0,
+SET renewing   = 0,
+    renew_retry=0,
     not_after=?,
     updated_at=?
 WHERE id = ?
@@ -191,18 +202,18 @@ func (q *Queries) UpdateCertAfterRenewal(ctx context.Context, arg UpdateCertAfte
 
 const updateRenewingState = `-- name: UpdateRenewingState :exec
 UPDATE certificates
-SET renewing     = ?,
-    renew_failed = ?
+SET renewing    = ?,
+    renew_retry = ?
 WHERE id = ?
 `
 
 type UpdateRenewingStateParams struct {
-	Renewing    bool  `json:"renewing"`
-	RenewFailed bool  `json:"renew_failed"`
-	ID          int64 `json:"id"`
+	Renewing   bool      `json:"renewing"`
+	RenewRetry time.Time `json:"renew_retry"`
+	ID         int64     `json:"id"`
 }
 
 func (q *Queries) UpdateRenewingState(ctx context.Context, arg UpdateRenewingStateParams) error {
-	_, err := q.db.ExecContext(ctx, updateRenewingState, arg.Renewing, arg.RenewFailed, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateRenewingState, arg.Renewing, arg.RenewRetry, arg.ID)
 	return err
 }

@@ -399,13 +399,14 @@ func (s *Service) getPrivateKey(id int64) (*rsa.PrivateKey, error) {
 // certificate to the certDir directory.
 func (s *Service) renewCert(localData *localCertData) error {
 	// database synchronous state
-	s.setRenewing(localData.id, true, false)
+	s.setRenewing(localData.id, true)
 	Logger.Debug("No certificates to update")
 
 	// run internal renewal code and log errors
 	cert, certBytes, err := s.renewCertInternal(localData)
 	if err != nil {
-		s.setRenewing(localData.id, false, true)
+		s.setRenewing(localData.id, false)
+		s.setRetry(localData.id)
 		return fmt.Errorf("failed to renew cert %d: %w", localData.id, err)
 	}
 
@@ -501,14 +502,20 @@ func (s *Service) renewCertInternal(localData *localCertData) (*x509.Certificate
 
 // setRenewing sets the renewing and failed states in the database for a
 // specified certificate id.
-func (s *Service) setRenewing(id int64, renewing, failed bool) {
+func (s *Service) setRenewing(id int64, renewing bool) {
 	err := s.db.UpdateRenewingState(context.Background(), database.UpdateRenewingStateParams{
-		Renewing:    renewing,
-		RenewFailed: failed,
-		ID:          id,
+		Renewing: renewing,
+		ID:       id,
 	})
 	if err != nil {
-		Logger.Warn("Failed to set renewing/failed mode in database", "id", id, "err", err)
+		Logger.Warn("Failed to set renewing mode in database", "id", id, "err", err)
+	}
+}
+
+func (s *Service) setRetry(id int64) {
+	err := s.db.SetRetryFlag(context.Background(), id)
+	if err != nil {
+		Logger.Warn("Failed to set retry time in database", "id", id, "err", err)
 	}
 }
 

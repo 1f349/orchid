@@ -25,14 +25,14 @@ type DomainStateValue struct {
 }
 
 type Certificate struct {
-	Id          int64     `json:"id"`
-	AutoRenew   bool      `json:"auto_renew"`
-	Active      bool      `json:"active"`
-	Renewing    bool      `json:"renewing"`
-	RenewFailed bool      `json:"renew_failed"`
-	NotAfter    time.Time `json:"not_after"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	Domains     []string  `json:"domains"`
+	Id         int64     `json:"id"`
+	AutoRenew  bool      `json:"auto_renew"`
+	Active     bool      `json:"active"`
+	Renewing   bool      `json:"renewing"`
+	RenewRetry time.Time `json:"renew_retry"`
+	NotAfter   time.Time `json:"not_after"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Domains    []string  `json:"domains"`
 }
 
 // NewApiServer creates and runs a http server containing all the API
@@ -69,13 +69,13 @@ func NewApiServer(listen string, db *database.Queries, signer *mjwt.KeyStore, do
 		// loop over query rows
 		for _, row := range rows {
 			c := Certificate{
-				Id:          row.ID,
-				AutoRenew:   row.AutoRenew,
-				Active:      row.Active,
-				Renewing:    row.Renewing,
-				RenewFailed: row.RenewFailed,
-				NotAfter:    row.NotAfter,
-				UpdatedAt:   row.UpdatedAt,
+				Id:         row.ID,
+				AutoRenew:  row.AutoRenew,
+				Active:     row.Active,
+				Renewing:   row.Renewing,
+				RenewRetry: row.RenewRetry,
+				NotAfter:   row.NotAfter,
+				UpdatedAt:  row.UpdatedAt,
 			}
 			d := row.Domain
 

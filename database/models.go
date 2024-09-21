@@ -10,16 +10,16 @@ import (
 )
 
 type Certificate struct {
-	ID          int64         `json:"id"`
-	Owner       string        `json:"owner"`
-	Dns         sql.NullInt64 `json:"dns"`
-	AutoRenew   bool          `json:"auto_renew"`
-	Active      bool          `json:"active"`
-	Renewing    bool          `json:"renewing"`
-	RenewFailed bool          `json:"renew_failed"`
-	NotAfter    time.Time     `json:"not_after"`
-	UpdatedAt   time.Time     `json:"updated_at"`
-	TempParent  sql.NullInt64 `json:"temp_parent"`
+	ID         int64         `json:"id"`
+	Owner      string        `json:"owner"`
+	Dns        sql.NullInt64 `json:"dns"`
+	AutoRenew  bool          `json:"auto_renew"`
+	Active     bool          `json:"active"`
+	Renewing   bool          `json:"renewing"`
+	NotAfter   time.Time     `json:"not_after"`
+	UpdatedAt  time.Time     `json:"updated_at"`
+	TempParent sql.NullInt64 `json:"temp_parent"`
+	RenewRetry time.Time     `json:"renew_retry"`
 }
 
 type CertificateDomain struct {
