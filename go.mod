@@ -4,6 +4,7 @@ go 1.23.5
 
 require (
 	github.com/1f349/mjwt v0.4.1
+	github.com/1f349/overlapfs v0.0.1
 	github.com/1f349/simplemail v0.0.8
 	github.com/1f349/violet v0.0.14
 	github.com/AlecAivazis/survey/v2 v2.3.7
@@ -16,7 +17,6 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/miekg/dns v1.1.63
-	github.com/mrmelon54/cdfs v0.0.1
 	github.com/mrmelon54/certgen v0.0.2
 	github.com/mrmelon54/exit-reload v0.0.2
 	github.com/stretchr/testify v1.10.0

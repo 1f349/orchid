@@ -20,6 +20,6 @@ type acmeConfig struct {
 }
 
 type mailConfig struct {
-	simplemail.Mail
-	To simplemail.FromAddress `yaml:"to"`
+	simplemail.Mail `yaml:",inline"`
+	To              simplemail.FromAddress `yaml:"to"`
 }

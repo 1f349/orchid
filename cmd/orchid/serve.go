@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"errors"
 	"flag"
 	"github.com/1f349/mjwt"
 	"github.com/1f349/orchid"
@@ -10,13 +11,14 @@ import (
 	"github.com/1f349/orchid/logger"
 	"github.com/1f349/orchid/renewal"
 	"github.com/1f349/orchid/servers"
+	"github.com/1f349/overlapfs"
 	"github.com/1f349/simplemail"
 	"github.com/1f349/violet/utils"
 	"github.com/google/subcommands"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/mrmelon54/cdfs"
 	"github.com/mrmelon54/exit-reload"
 	"gopkg.in/yaml.v3"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
@@ -75,9 +77,27 @@ func normalLoad(conf startUpConfig, wd string) {
 		logger.Logger.Fatal("Failed to load MJWT verifier public key from file", "path", filepath.Join(wd, "keys"), "err", err)
 	}
 
-	mail, err := simplemail.New(&conf.Mail.Mail, cdfs.CD(mailTemplates, "mail-templates"))
+	// get mail templates
+	mailDir := filepath.Join(wd, "mail-templates")
+	err = os.Mkdir(mailDir, os.ModePerm)
+	if err != nil && !errors.Is(err, os.ErrExist) {
+		return
+	}
+	wdFs := os.DirFS(mailDir)
+	mailTemplatesSub, err := fs.Sub(mailTemplates, "mail-templates")
+	if err != nil {
+		logger.Logger.Fatal("Failed to load embedded mail templates", "err", err)
+	}
+	templatesFS := overlapfs.OverlapFS{A: mailTemplatesSub, B: wdFs}
+
+	// create mail sender
+	mail, err := simplemail.New(&conf.Mail.Mail, templatesFS)
 	if err != nil {
 		logger.Logger.Fatal("Failed to load email sender", "err", err)
+	}
+	err = mail.Send("failed-to-find", "Test subject", conf.Mail.To.Address, map[string]any{})
+	if err != nil {
+		logger.Logger.Fatal("Failed to send start up mail", "err", err)
 	}
 
 	// open sqlite database
