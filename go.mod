@@ -8,7 +8,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/charmbracelet/log v0.4.0
 	github.com/go-acme/lego/v4 v4.17.3
-	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/google/subcommands v1.2.0
 	github.com/google/uuid v1.6.0
