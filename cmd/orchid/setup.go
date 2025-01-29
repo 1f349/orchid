@@ -2,16 +2,15 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"flag"
+	"errors"
 	"fmt"
 	httpAcme "github.com/1f349/orchid/http-acme"
+	"github.com/1f349/orchid/logger"
 	"github.com/1f349/orchid/renewal"
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/google/subcommands"
 	"gopkg.in/yaml.v3"
 	"math/rand"
 	"net"
@@ -22,37 +21,18 @@ import (
 	"time"
 )
 
-type setupCmd struct{ wdPath string }
+var errExitSetup = errors.New("exit setup")
 
-func (s *setupCmd) Name() string     { return "setup" }
-func (s *setupCmd) Synopsis() string { return "Setup certificate renewal service" }
-func (s *setupCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&s.wdPath, "wd", ".", "Path to the directory to create config files in (defaults to the working directory)")
-}
-func (s *setupCmd) Usage() string {
-	return `setup [-wd <directory>]
-  Setup Orchid automatically by answering questions.
-`
-}
-
-func (s *setupCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	// get absolute path to specify files
-	wdAbs, err := filepath.Abs(s.wdPath)
-	if err != nil {
-		fmt.Println("[Orchid] Failed to get full directory path: ", err)
-		return subcommands.ExitFailure
-	}
-
+func trySetup(wd string) error {
 	// ask about running the setup steps
 	createFile := false
-	err = survey.AskOne(&survey.Confirm{Message: fmt.Sprintf("Create Orchid config files in this directory: '%s'?", wdAbs)}, &createFile)
+	err := survey.AskOne(&survey.Confirm{Message: fmt.Sprintf("Create Orchid config files in this directory: '%s'?", wd)}, &createFile)
 	if err != nil {
-		fmt.Println("[Orchid] Error: ", err)
-		return subcommands.ExitFailure
+		return err
 	}
 	if !createFile {
-		fmt.Println("[Orchid] Goodbye")
-		return subcommands.ExitSuccess
+		logger.Logger.Info("Goodbye")
+		return errExitSetup
 	}
 
 	var answers struct {
@@ -64,7 +44,6 @@ func (s *setupCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 		AcmeRefreshUrl string
 		LEEmail        string
 	}
-	_ = answers
 
 	// ask main questions
 	err = survey.Ask([]*survey.Question{
@@ -88,8 +67,7 @@ func (s *setupCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 		},
 	}, &answers)
 	if err != nil {
-		fmt.Println("[Orchid] Error: ", err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	if answers.AcmeRefresh != "" {
@@ -111,35 +89,31 @@ func (s *setupCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 			},
 		}, &answers)
 		if err != nil {
-			fmt.Println("[Orchid] Error: ", err)
-			return subcommands.ExitFailure
+			return err
 		}
 	}
 
 	key, err := rsa.GenerateKey(rand.New(rand.NewSource(time.Now().UnixNano())), 4096)
 	if err != nil {
-		fmt.Println("[Orchid] Error: ", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("failed to generate private key: %w", err)
 	}
 	keyBytes := x509.MarshalPKCS1PrivateKey(key)
 	keyBuf := new(bytes.Buffer)
 	err = pem.Encode(keyBuf, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: keyBytes})
 	if err != nil {
-		fmt.Println("[Orchid] Error: ", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("failed to PEM encode private key: %w", err)
 	}
 
 	// write config file
-	confFile := filepath.Join(wdAbs, "config.yml")
+	confFile := filepath.Join(wd, "config.yml")
 	createConf, err := os.Create(confFile)
 	if err != nil {
-		fmt.Println("[Orchid] Failed to create config file: ", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("failed to create config file: %w", err)
 	}
+	defer createConf.Close()
 
-	confEncode := yaml.NewEncoder(createConf)
-	confEncode.SetIndent(2)
-	err = confEncode.Encode(startUpConfig{
+	// this is the whole config structure
+	config := startUpConfig{
 		Listen: answers.ApiListen,
 		Acme: acmeConfig{
 			PresentUrl: answers.AcmePresentUrl,
@@ -155,18 +129,20 @@ func (s *setupCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 			Certificate: "default",
 		},
 		Domains: strings.Split(answers.ApiDomains, ","),
-	})
+	}
+
+	confEncode := yaml.NewEncoder(createConf)
+	confEncode.SetIndent(2)
+	err = confEncode.Encode(config)
 	if err != nil {
-		fmt.Println("[Orchid] Failed to write config file: ", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
 	// write token file
-	tokenFile := filepath.Join(wdAbs, "tokens.yml")
+	tokenFile := filepath.Join(wd, "tokens.yml")
 	createTokens, err := os.Create(tokenFile)
 	if err != nil {
-		fmt.Println("[Orchid] Failed to create tokens file: ", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("failed to create tokens file: %w", err)
 	}
 
 	confEncode = yaml.NewEncoder(createTokens)
@@ -176,14 +152,13 @@ func (s *setupCmd) Execute(ctx context.Context, f *flag.FlagSet, args ...interfa
 		Refresh: answers.AcmeRefresh,
 	})
 	if err != nil {
-		fmt.Println("[Orchid] Failed to write tokens file: ", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("failed to write tokens file: %w", err)
 	}
 
-	fmt.Println("[Orchid] Setup complete")
-	fmt.Printf("[Orchid] Run the renewal service with `orchid serve -conf %s`\n", confFile)
+	logger.Logger.Info("Setup complete")
+	logger.Logger.Infof("Run the renewal service with `orchid-daemon -conf %s`", confFile)
 
-	return subcommands.ExitSuccess
+	return nil
 }
 
 func listenAddressValidator(ans interface{}) error {
