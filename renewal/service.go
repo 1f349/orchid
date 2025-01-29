@@ -322,6 +322,7 @@ func (s *Service) setupLegoClient() (*lego.Client, error) {
 	}
 
 	// create lego client from the config
+	// TODO: use a custom logger via `github.com/go-acme/lego/v4/log.Logger`
 	client, err := lego.NewClient(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate client: %w", err)
