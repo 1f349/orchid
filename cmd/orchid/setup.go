@@ -23,7 +23,7 @@ import (
 
 var errExitSetup = errors.New("exit setup")
 
-func trySetup(wd string) error {
+func runSetup(wd string) error {
 	// ask about running the setup steps
 	createFile := false
 	err := survey.AskOne(&survey.Confirm{Message: fmt.Sprintf("Create Orchid config files in this directory: '%s'?", wd)}, &createFile)

@@ -27,12 +27,14 @@ func main() {
 	logger.Logger.Info("Starting...")
 
 	if configPath == "" {
-		logger.Logger.Fatal("Config flag is missing")
+		logger.Logger.Error("Config flag is missing")
+		trySetup(configPath)
+		return
 	}
 
 	wd, err := getWD(configPath)
 	if err != nil {
-		logger.Logger.Fatal("Failed to find config directory: ", "err", err)
+		logger.Logger.Fatal("Failed to find config directory", "err", err)
 	}
 
 	// try to open the config file
@@ -41,19 +43,11 @@ func main() {
 	case err == nil:
 		break
 	case os.IsNotExist(err):
-		// handle potential errors during setup
-		err = trySetup(wd)
-		switch {
-		case errors.Is(err, errExitSetup):
-			// exit setup without questions
-			return
-		case err == nil:
-			return
-		default:
-			logger.Logger.Fatal("Failed to run setup", "err", err)
-		}
+		logger.Logger.Warn("Failed to open config file", "err", err)
+		trySetup(wd)
+		return
 	default:
-		logger.Logger.Fatal("Open config file: ", "err", err)
+		logger.Logger.Fatal("Open config file", "err", err)
 	}
 
 	// config file opened with no errors
@@ -63,7 +57,7 @@ func main() {
 	var config startUpConfig
 	err = yaml.NewDecoder(openConf).Decode(&config)
 	if err != nil {
-		logger.Logger.Fatal("Invalid config file: ", "err", err)
+		logger.Logger.Fatal("Invalid config file", "err", err)
 	}
 
 	runDaemon(wd, config)
@@ -114,4 +108,18 @@ func getWD(configPath string) (string, error) {
 		return "", err
 	}
 	return filepath.Dir(wdAbs), nil
+}
+
+func trySetup(wd string) {
+	// handle potential errors during setup
+	err := runSetup(wd)
+	switch {
+	case errors.Is(err, errExitSetup):
+		// exit setup without questions
+		return
+	case err == nil:
+		return
+	default:
+		logger.Logger.Fatal("Failed to run setup", "err", err)
+	}
 }
