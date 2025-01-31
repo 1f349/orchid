@@ -8,3 +8,8 @@ sql:
         package: "database"
         out: "database"
         emit_json_tags: true
+        overrides:
+          - column: certificates.not_after
+            go_type: database/sql.NullTime
+          - column: certificates.renew_retry
+            go_type: database/sql.NullTime

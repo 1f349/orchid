@@ -73,8 +73,8 @@ func NewApiServer(listen string, db *database.Queries, signer *mjwt.KeyStore, do
 				AutoRenew:  row.AutoRenew,
 				Active:     row.Active,
 				Renewing:   row.Renewing,
-				RenewRetry: row.RenewRetry,
-				NotAfter:   row.NotAfter,
+				RenewRetry: row.RenewRetry.Time,
+				NotAfter:   row.NotAfter.Time,
 				UpdatedAt:  row.UpdatedAt,
 			}
 			d := row.Domain
@@ -136,7 +136,7 @@ func NewApiServer(listen string, db *database.Queries, signer *mjwt.KeyStore, do
 		err := db.AddCertificate(req.Context(), database.AddCertificateParams{
 			Owner:     b.Subject,
 			Dns:       sql.NullInt64{},
-			NotAfter:  time.Now(),
+			NotAfter:  sql.NullTime{Time: time.Now(), Valid: true},
 			UpdatedAt: time.Now(),
 		})
 		if err != nil {

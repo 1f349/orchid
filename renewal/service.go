@@ -292,7 +292,7 @@ func (s *Service) findNextCertificateToRenew() (*localCertData, error) {
 	d.id = row.ID
 	d.dns.name = row.Type
 	d.dns.token = row.Token
-	d.notAfter = row.NotAfter
+	d.notAfter = row.NotAfter.Time
 	d.tempParent = row.TempParent
 
 	return d, nil
@@ -412,7 +412,7 @@ func (s *Service) renewCert(localData *localCertData) error {
 
 	// set the NotAfter/NotBefore in the database
 	err = s.db.UpdateCertAfterRenewal(context.Background(), database.UpdateCertAfterRenewalParams{
-		NotAfter:  cert.NotAfter,
+		NotAfter:  sql.NullTime{Time: cert.NotAfter, Valid: true},
 		UpdatedAt: cert.NotBefore,
 		ID:        localData.id,
 	})

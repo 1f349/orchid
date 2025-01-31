@@ -5,7 +5,7 @@ FROM certificates AS cert
 WHERE cert.active = 1
   AND (cert.auto_renew = 1 OR cert.not_after IS NULL)
   AND cert.renewing = 0
-  AND DATETIME() > DATETIME(cert.renew_retry)
+  AND (cert.renew_retry IS NULL OR DATETIME() > DATETIME(cert.renew_retry))
   AND (cert.not_after IS NULL OR DATETIME(cert.not_after, 'utc', '-30 days') < DATETIME())
 ORDER BY cert.temp_parent, cert.not_after DESC NULLS FIRST
 LIMIT 1;
