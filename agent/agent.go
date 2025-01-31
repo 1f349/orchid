@@ -65,6 +65,13 @@ func (a *Agent) syncRoutine(wg *sync.WaitGroup) {
 		wg.Done()
 	}()
 
+	Logger.Info("Doing quick agent check before starting...")
+	a.syncCheck()
+
+	// Logging or something
+	Logger.Info("Initial check complete, continually checking every 10 minutes...")
+
+	// Main loop
 	for {
 		select {
 		case <-a.done:
