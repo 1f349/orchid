@@ -23,6 +23,20 @@ import (
 
 var errExitSetup = errors.New("exit setup")
 
+func trySetup(wd string) {
+	// handle potential errors during setup
+	err := runSetup(wd)
+	switch {
+	case errors.Is(err, errExitSetup):
+		// exit setup without questions
+		return
+	case err == nil:
+		return
+	default:
+		logger.Logger.Fatal("Failed to run setup", "err", err)
+	}
+}
+
 func runSetup(wd string) error {
 	// ask about running the setup steps
 	createFile := false

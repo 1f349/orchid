@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"github.com/1f349/mjwt"
 	"github.com/1f349/orchid"
@@ -108,18 +107,4 @@ func getWD(configPath string) (string, error) {
 		return "", err
 	}
 	return filepath.Dir(wdAbs), nil
-}
-
-func trySetup(wd string) {
-	// handle potential errors during setup
-	err := runSetup(wd)
-	switch {
-	case errors.Is(err, errExitSetup):
-		// exit setup without questions
-		return
-	case err == nil:
-		return
-	default:
-		logger.Logger.Fatal("Failed to run setup", "err", err)
-	}
 }
