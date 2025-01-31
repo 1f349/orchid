@@ -95,7 +95,7 @@ func normalLoad(conf startUpConfig, wd string) {
 	if err != nil {
 		logger.Logger.Fatal("Failed to load email sender", "err", err)
 	}
-	err = mail.Send("failed-to-find", "Test subject", conf.Mail.To.Address, map[string]any{})
+	err = mail.Send("failed-to-find", "Test subject", conf.Mail.To.ToMailAddress(), map[string]any{})
 	if err != nil {
 		logger.Logger.Fatal("Failed to send start up mail", "err", err)
 	}

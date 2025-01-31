@@ -17,7 +17,7 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/miekg/dns v1.1.63
-	github.com/mrmelon54/certgen v0.0.2
+	github.com/mrmelon54/certgen v0.0.3
 	github.com/mrmelon54/exit-reload v0.0.2
 	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v3 v3.0.1
