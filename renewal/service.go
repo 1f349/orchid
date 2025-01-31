@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/pebble"
+	"github.com/1f349/orchid/utils"
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge"
 	"github.com/go-acme/lego/v4/challenge/dns01"
@@ -368,7 +369,7 @@ func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error)
 // getPrivateKey reads the private key for the specified certificate id, or
 // generates one is the file doesn't exist
 func (s *Service) getPrivateKey(id int64) (*rsa.PrivateKey, error) {
-	fPath := filepath.Join(s.keyDir, fmt.Sprintf("%d.key.pem", id))
+	fPath := filepath.Join(s.keyDir, utils.GetKeyFileName(id))
 	pemBytes, err := os.ReadFile(fPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -522,8 +523,8 @@ func (s *Service) setRetry(id int64) {
 // writeCertFile writes the output certificate file and renames the current one
 // to include `-old` in the name.
 func (s *Service) writeCertFile(id int64, certBytes []byte) error {
-	oldPath := filepath.Join(s.certDir, fmt.Sprintf("%d-old.cert.pem", id))
-	newPath := filepath.Join(s.certDir, fmt.Sprintf("%d.cert.pem", id))
+	oldPath := filepath.Join(s.certDir, utils.GetOldCertFileName(id))
+	newPath := filepath.Join(s.certDir, utils.GetCertFileName(id))
 
 	// move certificate file to old name
 	err := os.Rename(newPath, oldPath)
