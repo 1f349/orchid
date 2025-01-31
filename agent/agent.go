@@ -141,6 +141,9 @@ func (a *Agent) syncSingleAgentCertPair(startTime time.Time, row database.FindAg
 	}
 
 	client, err := ssh.Dial("tcp", row.Address, &ssh.ClientConfig{
+		Config: ssh.Config{
+			KeyExchanges: []string{"curve25519-sha256"},
+		},
 		User: row.User,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(a.sshKey),
