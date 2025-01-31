@@ -13,3 +13,7 @@ sql:
             go_type: database/sql.NullTime
           - column: certificates.renew_retry
             go_type: database/sql.NullTime
+          - column: agents.last_sync
+            go_type: database/sql.NullTime
+          - column: agent_certs.not_after
+            go_type: database/sql.NullTime

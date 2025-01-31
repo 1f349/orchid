@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/1f349/mjwt"
 	"github.com/1f349/orchid"
+	"github.com/1f349/orchid/agent"
 	httpAcme "github.com/1f349/orchid/http-acme"
 	"github.com/1f349/orchid/logger"
 	"github.com/1f349/orchid/renewal"
@@ -78,7 +79,7 @@ func runDaemon(wd string, conf startUpConfig) {
 	certDir := filepath.Join(wd, "renewal-certs")
 	keyDir := filepath.Join(wd, "renewal-keys")
 
-	wg := &sync.WaitGroup{}
+	wg := new(sync.WaitGroup)
 	acmeProv, err := httpAcme.NewHttpAcmeProvider(filepath.Join(wd, "tokens.yml"), conf.Acme.PresentUrl, conf.Acme.CleanUpUrl, conf.Acme.RefreshUrl)
 	if err != nil {
 		logger.Logger.Fatal("HTTP Acme Error", "err", err)
@@ -87,6 +88,10 @@ func runDaemon(wd string, conf startUpConfig) {
 	if err != nil {
 		logger.Logger.Fatal("Service Error", "err", err)
 	}
+	certAgent, err := agent.NewAgent(wg, db, loadAgentPrivateKey(wd), certDir, keyDir)
+	if err != nil {
+		logger.Logger.Fatal("Failed to create agent", "err", err)
+	}
 	srv := servers.NewApiServer(conf.Listen, db, mJwtVerify, conf.Domains)
 	logger.Logger.Info("Starting API server", "listen", srv.Addr)
 	go utils.RunBackgroundHttp(logger.Logger, srv)
@@ -94,6 +99,7 @@ func runDaemon(wd string, conf startUpConfig) {
 	exitReload.ExitReload("Violet", func() {}, func() {
 		// stop renewal service and api server
 		renewalService.Shutdown()
+		certAgent.Shutdown()
 		srv.Close()
 	})
 }

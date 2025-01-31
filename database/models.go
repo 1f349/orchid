@@ -9,6 +9,21 @@ import (
 	"time"
 )
 
+type Agent struct {
+	ID          int64        `json:"id"`
+	Address     string       `json:"address"`
+	User        string       `json:"user"`
+	Dir         string       `json:"dir"`
+	Fingerprint string       `json:"fingerprint"`
+	LastSync    sql.NullTime `json:"last_sync"`
+}
+
+type AgentCert struct {
+	AgentID  int64        `json:"agent_id"`
+	CertID   int64        `json:"cert_id"`
+	NotAfter sql.NullTime `json:"not_after"`
+}
+
 type Certificate struct {
 	ID         int64         `json:"id"`
 	Owner      string        `json:"owner"`
@@ -16,9 +31,9 @@ type Certificate struct {
 	AutoRenew  bool          `json:"auto_renew"`
 	Active     bool          `json:"active"`
 	Renewing   bool          `json:"renewing"`
-	NotAfter   sql.NullTime  `json:"not_after"`
 	UpdatedAt  time.Time     `json:"updated_at"`
 	TempParent sql.NullInt64 `json:"temp_parent"`
+	NotAfter   sql.NullTime  `json:"not_after"`
 	RenewRetry sql.NullTime  `json:"renew_retry"`
 }
 

@@ -3,10 +3,11 @@ package main
 import "github.com/1f349/orchid/renewal"
 
 type startUpConfig struct {
-	Listen  string                    `yaml:"listen"`
-	Acme    acmeConfig                `yaml:"acme"`
-	LE      renewal.LetsEncryptConfig `yaml:"letsEncrypt"`
-	Domains []string                  `yaml:"domains"`
+	Listen   string                    `yaml:"listen"`
+	Acme     acmeConfig                `yaml:"acme"`
+	LE       renewal.LetsEncryptConfig `yaml:"letsEncrypt"`
+	Domains  []string                  `yaml:"domains"`
+	AgentKey string                    `yaml:"agentKey"`
 }
 
 type acmeConfig struct {
