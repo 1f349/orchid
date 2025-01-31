@@ -192,7 +192,7 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 
 	sshConn, chans, reqs, err := ssh.NewServerConn(tcpConn, serverConfig)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 
 	// The incoming Request channel must be serviced.
