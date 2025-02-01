@@ -221,7 +221,11 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 				panic(err)
 			}
 
-			var fullFilePath string
+			var fullFilePath *string
+			{
+				a := ""
+				fullFilePath = &a
+			}
 
 			// Sessions have out-of-band requests such as "shell",
 			// "pty-req" and "env".  Here we handle only the
@@ -245,7 +249,7 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 						}
 						filePath := cmd[len(scpStartStr) : len(cmd)-1]
 						fmt.Println("Writing file:", filePath)
-						fullFilePath = filePath
+						*fullFilePath = filePath
 					}
 				}
 				wg.Done()
@@ -284,8 +288,8 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 				fileSize := must(strconv.Atoi(fileSizeStr[:len(fileSizeStr)-1]))
 
 				fileName := strings.TrimSpace(string(must(io.ReadAll(r))))
-				if fileName != filepath.Base(fullFilePath) {
-					panic(fmt.Errorf("invalid file name (expected \"%s\" from full path \"%s\" but got \"%s\")", filepath.Base(fullFilePath), fullFilePath, fileName))
+				if fileName != filepath.Base(*fullFilePath) {
+					panic(fmt.Errorf("invalid file name (expected \"%s\" from full path \"%s\" but got \"%s\")", filepath.Base(*fullFilePath), *fullFilePath, fileName))
 				}
 
 				if fileName != "420.cert.pem" && fileName != "420.key.pem" {
