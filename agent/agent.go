@@ -148,8 +148,9 @@ func (a *Agent) syncSingleAgentCertPair(startTime time.Time, row database.FindAg
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(a.sshKey),
 		},
-		HostKeyCallback: ssh.FixedHostKey(hostPubKey),
-		Timeout:         time.Second * 30,
+		HostKeyAlgorithms: []string{"ssh-ed25519"},
+		HostKeyCallback:   ssh.FixedHostKey(hostPubKey),
+		Timeout:           time.Second * 30,
 	})
 	if err != nil {
 		return fmt.Errorf("ssh dial: %w", err)
