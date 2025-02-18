@@ -69,7 +69,7 @@ func TestAgentSyncing(t *testing.T) {
 		now := time.Now().UTC()
 
 		t.Run("missing cert file", func(t *testing.T) {
-			err = agent.syncSingleAgentCertPair(now, database.FindAgentToSyncRow{
+			err = agent.copySingleCertPair(nil, database.FindAgentToSyncRow{
 				AgentID:      1337,
 				Address:      "",
 				User:         "test",
@@ -102,7 +102,7 @@ func TestAgentSyncing(t *testing.T) {
 		assert.NoError(t, err)
 
 		t.Run("missing key file", func(t *testing.T) {
-			err = agent.syncSingleAgentCertPair(now, database.FindAgentToSyncRow{
+			err = agent.copySingleCertPair(nil, database.FindAgentToSyncRow{
 				AgentID:      1337,
 				Address:      "",
 				User:         "test",
@@ -123,14 +123,23 @@ func TestAgentSyncing(t *testing.T) {
 			server := setupFakeSSH(&wg, func(remoteAddrPort netip.AddrPort, remotePubKey ssh.PublicKey) {
 				println("Attempt agent syncing")
 
-				err = agent.syncSingleAgentCertPair(now, database.FindAgentToSyncRow{
-					AgentID:      1337,
-					Address:      remoteAddrPort.String(),
-					User:         "test",
-					Dir:          "~/hello/world",
-					Fingerprint:  string(ssh.MarshalAuthorizedKey(remotePubKey)),
-					CertID:       420,
-					CertNotAfter: sql.NullTime{Time: now, Valid: true},
+				fingerprintStr := string(ssh.MarshalAuthorizedKey(remotePubKey))
+
+				err = agent.syncSingleAgentCertPairs(now, syncAgent{
+					agentId:     1337,
+					address:     remoteAddrPort.String(),
+					user:        "test",
+					fingerprint: fingerprintStr,
+				}, []database.FindAgentToSyncRow{
+					{
+						AgentID:      1337,
+						Address:      remoteAddrPort.String(),
+						User:         "test",
+						Dir:          "~/hello/world",
+						Fingerprint:  fingerprintStr,
+						CertID:       420,
+						CertNotAfter: sql.NullTime{Time: now, Valid: true},
+					},
 				})
 				assert.NoError(t, err)
 			})

@@ -160,7 +160,7 @@ func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, r
 	}
 
 	for _, row := range rows {
-		err := a.copySingleCertPair(scpClient, row)
+		err := a.copySingleCertPair(&scpClient, row)
 		if err != nil {
 			// This cert sync is allowed to fail without stopping other certs going to the
 			// same agent from copying.
@@ -184,7 +184,7 @@ func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, r
 	return nil
 }
 
-func (a *Agent) copySingleCertPair(scpClient scp.Client, row database.FindAgentToSyncRow) error {
+func (a *Agent) copySingleCertPair(scpClient *scp.Client, row database.FindAgentToSyncRow) error {
 	certName := utils.GetCertFileName(row.CertID)
 	keyName := utils.GetKeyFileName(row.CertID)
 
