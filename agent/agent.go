@@ -159,6 +159,8 @@ func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, r
 		return fmt.Errorf("scp client: %w", err)
 	}
 
+	hadError := false
+
 	for _, row := range rows {
 		err := a.copySingleCertPair(&scpClient, row)
 		if err != nil {
@@ -166,19 +168,23 @@ func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, r
 			// same agent from copying.
 			err = fmt.Errorf("copySingleCertPair: %w", err)
 			Logger.Warn("Agent certificate sync failed", "agent", row.AgentID, "cert", row.CertID, "not after", row.CertNotAfter, "err", err)
+			hadError = true
 			continue
 		}
 	}
 
-	// Update last sync to the time when the database request happened. This ensures
-	// that certificates updated after the database request and before the agent
-	// syncing are updated properly.
-	err = a.db.UpdateAgentLastSync(context.Background(), database.UpdateAgentLastSyncParams{
-		LastSync: sql.NullTime{Time: startTime, Valid: true},
-		ID:       agent.agentId,
-	})
-	if err != nil {
-		return fmt.Errorf("error updating agent last sync: %v", err)
+	// The agent last sync will only update if all scp copies were successful.
+	if !hadError {
+		// Update last sync to the time when the database request happened. This ensures
+		// that certificates updated after the database request and before the agent
+		// syncing are updated properly.
+		err = a.db.UpdateAgentLastSync(context.Background(), database.UpdateAgentLastSyncParams{
+			LastSync: sql.NullTime{Time: startTime, Valid: true},
+			ID:       agent.agentId,
+		})
+		if err != nil {
+			return fmt.Errorf("error updating agent last sync: %v", err)
+		}
 	}
 
 	return nil
