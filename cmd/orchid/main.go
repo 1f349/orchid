@@ -10,6 +10,7 @@ import (
 	"github.com/1f349/orchid/renewal"
 	"github.com/1f349/orchid/servers"
 	"github.com/1f349/violet/utils"
+	"github.com/charmbracelet/log"
 	_ "github.com/mattn/go-sqlite3"
 	exitReload "github.com/mrmelon54/exit-reload"
 	"gopkg.in/yaml.v3"
@@ -18,11 +19,19 @@ import (
 	"sync"
 )
 
-var configPath string
+var (
+	configPath string
+	debugMode  bool
+)
 
 func main() {
 	flag.StringVar(&configPath, "conf", "", "/path/to/config.json : path to the config file")
+	flag.BoolVar(&debugMode, "debug", false, "enable debug logging mode")
 	flag.Parse()
+
+	if debugMode {
+		logger.Logger.SetLevel(log.DebugLevel)
+	}
 
 	logger.Logger.Info("Starting...")
 
