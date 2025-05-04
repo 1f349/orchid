@@ -5,9 +5,8 @@ FROM agents
                     ON agent_certs.agent_id = agents.id
          INNER JOIN certificates AS cert
                     ON cert.id = agent_certs.cert_id
-WHERE (agents.last_sync IS NULL OR agents.last_sync < cert.updated_at)
-  AND (agent_certs.not_after IS NULL OR agent_certs.not_after IS NOT cert.not_after)
-ORDER BY agents.last_sync NULLS FIRST;
+WHERE (agents.last_sync IS NULL OR agents.last_sync < cert.updated_at OR agent_certs.not_after IS NULL OR agent_certs.not_after < cert.not_after)
+ORDER BY agents.last_sync, agent_certs.not_after NULLS FIRST;
 
 -- name: UpdateAgentLastSync :exec
 UPDATE agents
