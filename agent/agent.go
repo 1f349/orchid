@@ -88,6 +88,7 @@ func (a *Agent) syncRoutine(wg *sync.WaitGroup) {
 func (a *Agent) syncCheck() {
 	// if the lock is unavailable then ignore this cycle
 	if !a.syncLock.TryLock() {
+		Logger.Warn("Agent sync lock is not available")
 		return
 	}
 	defer a.syncLock.Unlock()
@@ -96,7 +97,8 @@ func (a *Agent) syncCheck() {
 
 	actions, err := a.db.FindAgentToSync(context.Background())
 	if err != nil {
-		panic(err)
+		Logger.Error("Error finding agent to-sync", "error", err)
+		return
 	}
 
 	a.syncCertPairs(now, actions)
