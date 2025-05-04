@@ -133,6 +133,9 @@ func (a *Agent) syncCertPairs(startTime time.Time, rows []database.FindAgentToSy
 }
 
 func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, rows []database.FindAgentToSyncRow) error {
+	Logger.Debug("Syncing agent", "id", agent.agentId, "address", agent.address, "fingerprint", agent.fingerprint, "cert_count", len(rows))
+	defer Logger.Debug("Finished syncing agent", "id", agent.agentId)
+
 	hostPubKey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(agent.fingerprint))
 	if err != nil {
 		return fmt.Errorf("failed to parse fingerprint: %w", err)
@@ -162,6 +165,8 @@ func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, r
 	hadError := false
 
 	for _, row := range rows {
+		Logger.Debug("Syncing certificate to agent", "id", agent.agentId, "address", agent.address, "fingerprint", agent.fingerprint, "cert_id", row.CertID, "not_after", row.CertNotAfter)
+
 		err := a.copySingleCertPair(&scpClient, row)
 		if err != nil {
 			// This cert sync is allowed to fail without stopping other certs going to the
@@ -185,6 +190,8 @@ func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, r
 		if err != nil {
 			return fmt.Errorf("error updating agent last sync: %v", err)
 		}
+
+		Logger.Debug("Successfully synced all agent certificates", "id", agent.agentId, "address", agent.address, "fingerprint", agent.fingerprint)
 	}
 
 	return nil
