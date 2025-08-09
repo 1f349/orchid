@@ -4,7 +4,7 @@ go 1.24.1
 
 require (
 	github.com/1f349/mjwt v0.4.1
-	github.com/1f349/verbena v0.0.2
+	github.com/1f349/verbena v0.0.3
 	github.com/1f349/violet v0.0.14
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/bramvdbogaerde/go-scp v1.5.0
