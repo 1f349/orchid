@@ -11,8 +11,16 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"math/rand"
+	"net/http"
+	"os"
+	"path/filepath"
+	"sync"
+	"time"
+
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/pebble"
+	"github.com/1f349/orchid/providers/verbena"
 	"github.com/1f349/orchid/utils"
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge"
@@ -21,12 +29,6 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns/duckdns"
 	"github.com/go-acme/lego/v4/providers/dns/namesilo"
 	"github.com/go-acme/lego/v4/registration"
-	"math/rand"
-	"net/http"
-	"os"
-	"path/filepath"
-	"sync"
-	"time"
 )
 
 var ErrUnsupportedDNSProvider = errors.New("unsupported DNS provider")
@@ -356,6 +358,14 @@ func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error)
 		})
 	case "namesilo":
 		return namesilo.NewDNSProviderConfig(&namesilo.Config{
+			APIKey:             token,
+			PropagationTimeout: 2 * time.Hour,
+			PollingInterval:    15 * time.Minute,
+			TTL:                3600,
+		})
+	case "1f349":
+		return verbena.NewDNSProviderConfig(&verbena.Config{
+			Host:               "https://api.1f349.com/v1/verbena",
 			APIKey:             token,
 			PropagationTimeout: 2 * time.Hour,
 			PollingInterval:    15 * time.Minute,

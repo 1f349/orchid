@@ -4,11 +4,13 @@ go 1.24.1
 
 require (
 	github.com/1f349/mjwt v0.4.1
+	github.com/1f349/verbena v0.0.2
 	github.com/1f349/violet v0.0.14
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/bramvdbogaerde/go-scp v1.5.0
 	github.com/charmbracelet/log v0.4.2
 	github.com/go-acme/lego/v4 v4.25.2
+	github.com/gobuffalo/nulls v0.4.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang-migrate/migrate/v4 v4.18.3
 	github.com/google/uuid v1.6.0
@@ -35,6 +37,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-jose/go-jose/v4 v4.1.2 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
+	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
