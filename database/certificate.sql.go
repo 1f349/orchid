@@ -53,7 +53,7 @@ const checkCertOwner = `-- name: CheckCertOwner :one
 SELECT id, owner
 FROM certificates
 WHERE active = 1
-  and id = ?
+  AND id = ?
 `
 
 type CheckCertOwnerRow struct {
@@ -182,10 +182,10 @@ func (q *Queries) SetRetryFlag(ctx context.Context, id int64) error {
 
 const updateCertAfterRenewal = `-- name: UpdateCertAfterRenewal :exec
 UPDATE certificates
-SET renewing   = 0,
-    renew_retry=0,
-    not_after=?,
-    updated_at=?
+SET renewing    = 0,
+    renew_retry = 0,
+    not_after   = ?,
+    updated_at  = ?
 WHERE id = ?
 `
 

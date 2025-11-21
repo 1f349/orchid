@@ -35,10 +35,10 @@ WHERE id = ?;
 
 -- name: UpdateCertAfterRenewal :exec
 UPDATE certificates
-SET renewing   = 0,
-    renew_retry=0,
-    not_after=?,
-    updated_at=?
+SET renewing    = 0,
+    renew_retry = 0,
+    not_after   = ?,
+    updated_at  = ?
 WHERE id = ?;
 
 -- name: AddCertificate :exec
@@ -58,4 +58,4 @@ WHERE id = ?;
 SELECT id, owner
 FROM certificates
 WHERE active = 1
-  and id = ?;
+  AND id = ?;
