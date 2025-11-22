@@ -9,18 +9,26 @@ import (
 	"context"
 	"database/sql"
 	"time"
+
+	"github.com/1f349/orchid/database/types"
 )
 
 const addCertificate = `-- name: AddCertificate :exec
-INSERT INTO certificates (owner, dns, not_after, updated_at)
-VALUES (?, ?, ?, ?)
+INSERT INTO certificates (owner, dns, not_after, updated_at, authority, country, org, org_unit, locality, province)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type AddCertificateParams struct {
-	Owner     string        `json:"owner"`
-	Dns       sql.NullInt64 `json:"dns"`
-	NotAfter  sql.NullTime  `json:"not_after"`
-	UpdatedAt time.Time     `json:"updated_at"`
+	Owner     string          `json:"owner"`
+	Dns       sql.NullInt64   `json:"dns"`
+	NotAfter  sql.NullTime    `json:"not_after"`
+	UpdatedAt time.Time       `json:"updated_at"`
+	Authority types.Authority `json:"authority"`
+	Country   string          `json:"country"`
+	Org       string          `json:"org"`
+	OrgUnit   string          `json:"org_unit"`
+	Locality  string          `json:"locality"`
+	Province  string          `json:"province"`
 }
 
 func (q *Queries) AddCertificate(ctx context.Context, arg AddCertificateParams) error {
@@ -29,23 +37,45 @@ func (q *Queries) AddCertificate(ctx context.Context, arg AddCertificateParams) 
 		arg.Dns,
 		arg.NotAfter,
 		arg.UpdatedAt,
+		arg.Authority,
+		arg.Country,
+		arg.Org,
+		arg.OrgUnit,
+		arg.Locality,
+		arg.Province,
 	)
 	return err
 }
 
-const addTempCertificate = `-- name: AddTempCertificate :exec
-INSERT INTO certificates (owner, dns, active, updated_at, temp_parent)
-VALUES (?, NULL, 1, ?, ?)
+const changeCertificateDetails = `-- name: ChangeCertificateDetails :exec
+UPDATE certificates
+SET country            = ?,
+    org                = ?,
+    org_unit           = ?,
+    locality           = ?,
+    province           = ?,
+    details_updated_at = DATETIME()
+WHERE id = ?
 `
 
-type AddTempCertificateParams struct {
-	Owner      string        `json:"owner"`
-	UpdatedAt  time.Time     `json:"updated_at"`
-	TempParent sql.NullInt64 `json:"temp_parent"`
+type ChangeCertificateDetailsParams struct {
+	Country  string `json:"country"`
+	Org      string `json:"org"`
+	OrgUnit  string `json:"org_unit"`
+	Locality string `json:"locality"`
+	Province string `json:"province"`
+	ID       int64  `json:"id"`
 }
 
-func (q *Queries) AddTempCertificate(ctx context.Context, arg AddTempCertificateParams) error {
-	_, err := q.db.ExecContext(ctx, addTempCertificate, arg.Owner, arg.UpdatedAt, arg.TempParent)
+func (q *Queries) ChangeCertificateDetails(ctx context.Context, arg ChangeCertificateDetailsParams) error {
+	_, err := q.db.ExecContext(ctx, changeCertificateDetails,
+		arg.Country,
+		arg.Org,
+		arg.OrgUnit,
+		arg.Locality,
+		arg.Province,
+		arg.ID,
+	)
 	return err
 }
 

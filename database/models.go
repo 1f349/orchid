@@ -7,6 +7,8 @@ package database
 import (
 	"database/sql"
 	"time"
+
+	"github.com/1f349/orchid/database/types"
 )
 
 type Agent struct {
@@ -25,16 +27,23 @@ type AgentCert struct {
 }
 
 type Certificate struct {
-	ID         int64         `json:"id"`
-	Owner      string        `json:"owner"`
-	Dns        sql.NullInt64 `json:"dns"`
-	AutoRenew  bool          `json:"auto_renew"`
-	Active     bool          `json:"active"`
-	Renewing   bool          `json:"renewing"`
-	UpdatedAt  time.Time     `json:"updated_at"`
-	TempParent sql.NullInt64 `json:"temp_parent"`
-	NotAfter   sql.NullTime  `json:"not_after"`
-	RenewRetry sql.NullTime  `json:"renew_retry"`
+	ID               int64           `json:"id"`
+	Owner            string          `json:"owner"`
+	Dns              sql.NullInt64   `json:"dns"`
+	AutoRenew        bool            `json:"auto_renew"`
+	Active           bool            `json:"active"`
+	Renewing         bool            `json:"renewing"`
+	UpdatedAt        time.Time       `json:"updated_at"`
+	TempParent       sql.NullInt64   `json:"temp_parent"`
+	NotAfter         sql.NullTime    `json:"not_after"`
+	RenewRetry       sql.NullTime    `json:"renew_retry"`
+	Authority        types.Authority `json:"authority"`
+	Country          string          `json:"country"`
+	Org              string          `json:"org"`
+	OrgUnit          string          `json:"org_unit"`
+	Locality         string          `json:"locality"`
+	Province         string          `json:"province"`
+	DetailsUpdatedAt interface{}     `json:"details_updated_at"`
 }
 
 type CertificateDomain struct {

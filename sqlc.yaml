@@ -17,3 +17,5 @@ sql:
             go_type: database/sql.NullTime
           - column: agent_certs.not_after
             go_type: database/sql.NullTime
+          - column: certificates.authority
+            go_type: github.com/1f349/orchid/database/types.Authority

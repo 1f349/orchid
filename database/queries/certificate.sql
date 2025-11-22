@@ -42,12 +42,18 @@ SET renewing    = 0,
 WHERE id = ?;
 
 -- name: AddCertificate :exec
-INSERT INTO certificates (owner, dns, not_after, updated_at)
-VALUES (?, ?, ?, ?);
+INSERT INTO certificates (owner, dns, not_after, updated_at, authority, country, org, org_unit, locality, province)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
--- name: AddTempCertificate :exec
-INSERT INTO certificates (owner, dns, active, updated_at, temp_parent)
-VALUES (?, NULL, 1, ?, ?);
+-- name: ChangeCertificateDetails :exec
+UPDATE certificates
+SET country            = ?,
+    org                = ?,
+    org_unit           = ?,
+    locality           = ?,
+    province           = ?,
+    details_updated_at = DATETIME()
+WHERE id = ?;
 
 -- name: RemoveCertificate :exec
 UPDATE certificates
