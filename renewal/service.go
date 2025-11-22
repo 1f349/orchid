@@ -474,7 +474,7 @@ func (s *Service) renewCertInternal(localData *localCertData) (*x509.Certificate
 		// will validate these tests
 		dnsAddr := testDnsOptions.GetDnsAddrs()
 		Logger.Info("Using testDnsOptions with DNS server", "addr", dnsAddr)
-		_ = s.client.Challenge.SetDNS01Provider(testDnsOptions, dns01.AddRecursiveNameservers(dnsAddr), dns01.DisableCompletePropagationRequirement())
+		_ = s.client.Challenge.SetDNS01Provider(testDnsOptions, dns01.AddRecursiveNameservers(dnsAddr), dns01.DisableAuthoritativeNssPropagationRequirement())
 	} else if localData.dns.name.Valid && localData.dns.token.Valid {
 		// if the dns name and token are "valid" meaning non-null in this case
 		// set up the specific dns provider requested
