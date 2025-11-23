@@ -107,7 +107,7 @@ func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, 
 	}
 
 	if err != nil {
-		http.Error(rw, "Failed to add certificate to the database", http.StatusBadRequest)
+		http.Error(rw, "Failed to add certificate to the database", http.StatusInternalServerError)
 		logger.Logger.Error("Failed to add certificate to the database", "err", err)
 		return
 	}
