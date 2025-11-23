@@ -11,7 +11,6 @@ import (
 	"github.com/1f349/orchid/logger"
 	oUtils "github.com/1f349/orchid/utils"
 	vUtils "github.com/1f349/violet/utils"
-	"github.com/gobuffalo/nulls"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"slices"
@@ -133,17 +132,7 @@ func NewApiServer(listen string, db *database.Queries, signer *mjwt.KeyStore, do
 	}))
 
 	r.POST("/cert", checkAuthWithPerm(signer, "orchid:cert", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
-		err := db.AddCertificate(req.Context(), database.AddCertificateParams{
-			Owner:     b.Subject,
-			Dns:       nulls.Int64{},
-			NotAfter:  nulls.NewTime(time.Now()),
-			UpdatedAt: time.Now(),
-		})
-		if err != nil {
-			apiError(rw, http.StatusInternalServerError, "Failed to delete certificate")
-			return
-		}
-		rw.WriteHeader(http.StatusAccepted)
+		certCreate(rw, req, params, b, db)
 	}))
 	r.DELETE("/cert/:id", checkAuthForCertificate(signer, "orchid:cert", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId int64) {
 		err := db.RemoveCertificate(req.Context(), certId)
