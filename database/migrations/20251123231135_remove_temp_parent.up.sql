@@ -1,0 +1,3 @@
+-- TODO(melon): IF EXISTS does not work in Sqlite, leave the column for now
+--ALTER TABLE certificates
+--    DROP COLUMN temp_parent;

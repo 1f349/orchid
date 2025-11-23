@@ -102,7 +102,7 @@ func (q *Queries) CheckCertOwner(ctx context.Context, id int64) (CheckCertOwnerR
 }
 
 const findNextCert = `-- name: FindNextCert :one
-SELECT cert.id, cert.not_after, dns_acme.type, dns_acme.token, cert.temp_parent
+SELECT cert.id, cert.not_after, dns_acme.type, dns_acme.token
 FROM certificates AS cert
          LEFT OUTER JOIN dns_acme ON cert.dns = dns_acme.id
 WHERE cert.active = 1
@@ -110,16 +110,15 @@ WHERE cert.active = 1
   AND cert.renewing = 0
   AND (cert.renew_retry IS NULL OR DATETIME() > DATETIME(cert.renew_retry))
   AND (cert.not_after IS NULL OR DATETIME(cert.not_after, 'utc', '-30 days') < DATETIME())
-ORDER BY cert.temp_parent, cert.not_after DESC NULLS FIRST
+ORDER BY cert.not_after DESC NULLS FIRST
 LIMIT 1
 `
 
 type FindNextCertRow struct {
-	ID         int64          `json:"id"`
-	NotAfter   nulls.Time     `json:"not_after"`
-	Type       sql.NullString `json:"type"`
-	Token      sql.NullString `json:"token"`
-	TempParent sql.NullInt64  `json:"temp_parent"`
+	ID       int64          `json:"id"`
+	NotAfter nulls.Time     `json:"not_after"`
+	Type     sql.NullString `json:"type"`
+	Token    sql.NullString `json:"token"`
 }
 
 func (q *Queries) FindNextCert(ctx context.Context) (FindNextCertRow, error) {
@@ -130,7 +129,6 @@ func (q *Queries) FindNextCert(ctx context.Context) (FindNextCertRow, error) {
 		&i.NotAfter,
 		&i.Type,
 		&i.Token,
-		&i.TempParent,
 	)
 	return i, err
 }

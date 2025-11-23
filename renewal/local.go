@@ -12,7 +12,6 @@ type localCertData struct {
 		name  sql.NullString
 		token sql.NullString
 	}
-	notAfter   time.Time
-	domains    []string
-	tempParent sql.NullInt64
+	notAfter time.Time
+	domains  []string
 }

@@ -296,14 +296,13 @@ func (s *Service) findNextCertificateToRenew() (*localCertData, error) {
 	d.dns.name = row.Type
 	d.dns.token = row.Token
 	d.notAfter = row.NotAfter.Time
-	d.tempParent = row.TempParent
 
 	return d, nil
 }
 
 func (s *Service) fetchDomains(localData *localCertData) ([]string, error) {
 	// more sql: this one just grabs all the domains for a certificate
-	domains, err := s.db.GetDomainsForCertificate(context.Background(), resolveTempParent(localData))
+	domains, err := s.db.GetDomainsForCertificate(context.Background(), localData.id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch domains for certificate: %d: %w", localData.id, err)
 	}
@@ -556,11 +555,4 @@ func (s *Service) writeCertFile(id int64, certBytes []byte) error {
 	}
 
 	return nil
-}
-
-func resolveTempParent(local *localCertData) int64 {
-	if local.tempParent.Valid {
-		return local.tempParent.Int64
-	}
-	return local.id
 }
