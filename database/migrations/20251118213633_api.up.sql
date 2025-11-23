@@ -1,5 +1,7 @@
 ALTER TABLE certificates
     ADD COLUMN authority INTEGER NOT NULL DEFAULT 1; -- Default to LetsEncrypt
+ALTER TABLE main.certificates
+    ADD COLUMN common_name TEXT NOT NULL DEFAULT '';
 ALTER TABLE certificates
     ADD COLUMN country TEXT NOT NULL DEFAULT '';
 ALTER TABLE certificates

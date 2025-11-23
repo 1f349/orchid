@@ -15,21 +15,22 @@ import (
 )
 
 const addCertificate = `-- name: AddCertificate :exec
-INSERT INTO certificates (owner, dns, not_after, updated_at, authority, country, org, org_unit, locality, province)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO certificates (owner, dns, not_after, updated_at, authority, common_name, country, org, org_unit, locality, province)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type AddCertificateParams struct {
-	Owner     string          `json:"owner"`
-	Dns       nulls.Int64     `json:"dns"`
-	NotAfter  nulls.Time      `json:"not_after"`
-	UpdatedAt time.Time       `json:"updated_at"`
-	Authority types.Authority `json:"authority"`
-	Country   string          `json:"country"`
-	Org       string          `json:"org"`
-	OrgUnit   string          `json:"org_unit"`
-	Locality  string          `json:"locality"`
-	Province  string          `json:"province"`
+	Owner      string          `json:"owner"`
+	Dns        nulls.Int64     `json:"dns"`
+	NotAfter   nulls.Time      `json:"not_after"`
+	UpdatedAt  time.Time       `json:"updated_at"`
+	Authority  types.Authority `json:"authority"`
+	CommonName string          `json:"common_name"`
+	Country    string          `json:"country"`
+	Org        string          `json:"org"`
+	OrgUnit    string          `json:"org_unit"`
+	Locality   string          `json:"locality"`
+	Province   string          `json:"province"`
 }
 
 func (q *Queries) AddCertificate(ctx context.Context, arg AddCertificateParams) error {
@@ -39,6 +40,7 @@ func (q *Queries) AddCertificate(ctx context.Context, arg AddCertificateParams) 
 		arg.NotAfter,
 		arg.UpdatedAt,
 		arg.Authority,
+		arg.CommonName,
 		arg.Country,
 		arg.Org,
 		arg.OrgUnit,

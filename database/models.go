@@ -39,6 +39,7 @@ type Certificate struct {
 	NotAfter         nulls.Time      `json:"not_after"`
 	RenewRetry       nulls.Time      `json:"renew_retry"`
 	Authority        types.Authority `json:"authority"`
+	CommonName       string          `json:"common_name"`
 	Country          string          `json:"country"`
 	Org              string          `json:"org"`
 	OrgUnit          string          `json:"org_unit"`
