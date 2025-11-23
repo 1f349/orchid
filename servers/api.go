@@ -160,36 +160,6 @@ func NewApiServer(listen string, db *database.Queries, signer *mjwt.KeyStore, do
 	r.PUT("/cert/:id/domains", managePutDelete)
 	r.DELETE("/cert/:id/domains", managePutDelete)
 
-	// Endpoint for generating a temporary certificate for modified domains
-	r.POST("/cert/:id/temp", checkAuth(signer, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
-		if !b.Claims.Perms.Has("orchid:cert") {
-			apiError(rw, http.StatusForbidden, "No permission")
-			return
-		}
-
-		// lookup certificate owner
-		id, err := checkCertOwner(db, "", b)
-		if err != nil {
-			apiError(rw, http.StatusInsufficientStorage, "Database error")
-			return
-		}
-
-		// run a safe transaction to create the temporary certificate
-		if db.UseTx(req.Context(), func(tx *database.Queries) error {
-			// insert temporary certificate into database
-			err := tx.AddTempCertificate(req.Context(), database.AddTempCertificateParams{
-				Owner:      b.Subject,
-				UpdatedAt:  time.Now(),
-				TempParent: sql.NullInt64{Valid: true, Int64: id},
-			})
-			return err
-		}) != nil {
-			apiError(rw, http.StatusInsufficientStorage, "Database error")
-			fmt.Printf("Internal error: %s\n", err)
-			return
-		}
-	}))
-
 	// Create and run http server
 	return &http.Server{
 		Addr:              listen,
