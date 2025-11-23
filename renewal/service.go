@@ -11,13 +11,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"math/rand"
-	"net/http"
-	"os"
-	"path/filepath"
-	"sync"
-	"time"
-
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/pebble"
 	"github.com/1f349/orchid/providers/verbena"
@@ -29,6 +22,13 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns/duckdns"
 	"github.com/go-acme/lego/v4/providers/dns/namesilo"
 	"github.com/go-acme/lego/v4/registration"
+	"github.com/gobuffalo/nulls"
+	"math/rand"
+	"net/http"
+	"os"
+	"path/filepath"
+	"sync"
+	"time"
 )
 
 var ErrUnsupportedDNSProvider = errors.New("unsupported DNS provider")
@@ -423,7 +423,7 @@ func (s *Service) renewCert(localData *localCertData) error {
 
 	// set the NotAfter/NotBefore in the database
 	err = s.db.UpdateCertAfterRenewal(context.Background(), database.UpdateCertAfterRenewalParams{
-		NotAfter:  sql.NullTime{Time: cert.NotAfter, Valid: true},
+		NotAfter:  nulls.NewTime(cert.NotAfter),
 		UpdatedAt: cert.NotBefore,
 		ID:        localData.id,
 	})

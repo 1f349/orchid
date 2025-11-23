@@ -5,13 +5,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509/pkix"
-	"database/sql"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/logger"
 	"github.com/charmbracelet/log"
+	"github.com/gobuffalo/nulls"
 	"github.com/mrmelon54/certgen"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"
@@ -76,7 +76,7 @@ func TestAgentSyncing(t *testing.T) {
 				Dir:          "~/hello/world",
 				Fingerprint:  "",
 				CertID:       420,
-				CertNotAfter: sql.NullTime{Time: now, Valid: true},
+				CertNotAfter: nulls.NewTime(now),
 			})
 			assert.Contains(t, err.Error(), "open cert file:")
 			assert.Contains(t, err.Error(), "no such file or directory")
@@ -109,7 +109,7 @@ func TestAgentSyncing(t *testing.T) {
 				Dir:          "~/hello/world",
 				Fingerprint:  "",
 				CertID:       420,
-				CertNotAfter: sql.NullTime{Time: now, Valid: true},
+				CertNotAfter: nulls.NewTime(now),
 			})
 			assert.Contains(t, err.Error(), "open key file:")
 			assert.Contains(t, err.Error(), "no such file or directory")
@@ -138,7 +138,7 @@ func TestAgentSyncing(t *testing.T) {
 						Dir:          "~/hello/world",
 						Fingerprint:  fingerprintStr,
 						CertID:       420,
-						CertNotAfter: sql.NullTime{Time: now, Valid: true},
+						CertNotAfter: nulls.NewTime(now),
 					},
 				})
 				assert.NoError(t, err)

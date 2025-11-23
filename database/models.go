@@ -9,34 +9,35 @@ import (
 	"time"
 
 	"github.com/1f349/orchid/database/types"
+	"github.com/gobuffalo/nulls"
 )
 
 type Agent struct {
-	ID          int64        `json:"id"`
-	Address     string       `json:"address"`
-	User        string       `json:"user"`
-	Dir         string       `json:"dir"`
-	Fingerprint string       `json:"fingerprint"`
-	LastSync    sql.NullTime `json:"last_sync"`
+	ID          int64      `json:"id"`
+	Address     string     `json:"address"`
+	User        string     `json:"user"`
+	Dir         string     `json:"dir"`
+	Fingerprint string     `json:"fingerprint"`
+	LastSync    nulls.Time `json:"last_sync"`
 }
 
 type AgentCert struct {
-	AgentID  int64        `json:"agent_id"`
-	CertID   int64        `json:"cert_id"`
-	NotAfter sql.NullTime `json:"not_after"`
+	AgentID  int64      `json:"agent_id"`
+	CertID   int64      `json:"cert_id"`
+	NotAfter nulls.Time `json:"not_after"`
 }
 
 type Certificate struct {
 	ID               int64           `json:"id"`
 	Owner            string          `json:"owner"`
-	Dns              sql.NullInt64   `json:"dns"`
+	Dns              nulls.Int64     `json:"dns"`
 	AutoRenew        bool            `json:"auto_renew"`
 	Active           bool            `json:"active"`
 	Renewing         bool            `json:"renewing"`
 	UpdatedAt        time.Time       `json:"updated_at"`
 	TempParent       sql.NullInt64   `json:"temp_parent"`
-	NotAfter         sql.NullTime    `json:"not_after"`
-	RenewRetry       sql.NullTime    `json:"renew_retry"`
+	NotAfter         nulls.Time      `json:"not_after"`
+	RenewRetry       nulls.Time      `json:"renew_retry"`
 	Authority        types.Authority `json:"authority"`
 	Country          string          `json:"country"`
 	Org              string          `json:"org"`

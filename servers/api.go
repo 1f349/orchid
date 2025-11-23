@@ -2,7 +2,6 @@ package servers
 
 import (
 	"context"
-	"database/sql"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -12,6 +11,7 @@ import (
 	"github.com/1f349/orchid/logger"
 	oUtils "github.com/1f349/orchid/utils"
 	vUtils "github.com/1f349/violet/utils"
+	"github.com/gobuffalo/nulls"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"slices"
@@ -135,8 +135,8 @@ func NewApiServer(listen string, db *database.Queries, signer *mjwt.KeyStore, do
 	r.POST("/cert", checkAuthWithPerm(signer, "orchid:cert", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
 		err := db.AddCertificate(req.Context(), database.AddCertificateParams{
 			Owner:     b.Subject,
-			Dns:       sql.NullInt64{},
-			NotAfter:  sql.NullTime{Time: time.Now(), Valid: true},
+			Dns:       nulls.Int64{},
+			NotAfter:  nulls.NewTime(time.Now()),
 			UpdatedAt: time.Now(),
 		})
 		if err != nil {

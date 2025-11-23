@@ -10,12 +10,14 @@ sql:
         emit_json_tags: true
         overrides:
           - column: certificates.not_after
-            go_type: database/sql.NullTime
+            go_type: github.com/gobuffalo/nulls.Time
           - column: certificates.renew_retry
-            go_type: database/sql.NullTime
+            go_type: github.com/gobuffalo/nulls.Time
           - column: agents.last_sync
-            go_type: database/sql.NullTime
+            go_type: github.com/gobuffalo/nulls.Time
           - column: agent_certs.not_after
-            go_type: database/sql.NullTime
+            go_type: github.com/gobuffalo/nulls.Time
+          - column: certificates.dns
+            go_type: github.com/gobuffalo/nulls.Int64
           - column: certificates.authority
             go_type: github.com/1f349/orchid/database/types.Authority

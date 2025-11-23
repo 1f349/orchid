@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/1f349/orchid/database/types"
+	"github.com/gobuffalo/nulls"
 )
 
 const addCertificate = `-- name: AddCertificate :exec
@@ -20,8 +21,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
 type AddCertificateParams struct {
 	Owner     string          `json:"owner"`
-	Dns       sql.NullInt64   `json:"dns"`
-	NotAfter  sql.NullTime    `json:"not_after"`
+	Dns       nulls.Int64     `json:"dns"`
+	NotAfter  nulls.Time      `json:"not_after"`
 	UpdatedAt time.Time       `json:"updated_at"`
 	Authority types.Authority `json:"authority"`
 	Country   string          `json:"country"`
@@ -113,7 +114,7 @@ LIMIT 1
 
 type FindNextCertRow struct {
 	ID         int64          `json:"id"`
-	NotAfter   sql.NullTime   `json:"not_after"`
+	NotAfter   nulls.Time     `json:"not_after"`
 	Type       sql.NullString `json:"type"`
 	Token      sql.NullString `json:"token"`
 	TempParent sql.NullInt64  `json:"temp_parent"`
@@ -146,14 +147,14 @@ FROM certificates AS cert
 `
 
 type FindOwnedCertsRow struct {
-	ID         int64        `json:"id"`
-	AutoRenew  bool         `json:"auto_renew"`
-	Active     bool         `json:"active"`
-	Renewing   bool         `json:"renewing"`
-	RenewRetry sql.NullTime `json:"renew_retry"`
-	NotAfter   sql.NullTime `json:"not_after"`
-	UpdatedAt  time.Time    `json:"updated_at"`
-	Domain     string       `json:"domain"`
+	ID         int64      `json:"id"`
+	AutoRenew  bool       `json:"auto_renew"`
+	Active     bool       `json:"active"`
+	Renewing   bool       `json:"renewing"`
+	RenewRetry nulls.Time `json:"renew_retry"`
+	NotAfter   nulls.Time `json:"not_after"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+	Domain     string     `json:"domain"`
 }
 
 func (q *Queries) FindOwnedCerts(ctx context.Context) ([]FindOwnedCertsRow, error) {
@@ -220,9 +221,9 @@ WHERE id = ?
 `
 
 type UpdateCertAfterRenewalParams struct {
-	NotAfter  sql.NullTime `json:"not_after"`
-	UpdatedAt time.Time    `json:"updated_at"`
-	ID        int64        `json:"id"`
+	NotAfter  nulls.Time `json:"not_after"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	ID        int64      `json:"id"`
 }
 
 func (q *Queries) UpdateCertAfterRenewal(ctx context.Context, arg UpdateCertAfterRenewalParams) error {
@@ -238,9 +239,9 @@ WHERE id = ?
 `
 
 type UpdateRenewingStateParams struct {
-	Renewing   bool         `json:"renewing"`
-	RenewRetry sql.NullTime `json:"renew_retry"`
-	ID         int64        `json:"id"`
+	Renewing   bool       `json:"renewing"`
+	RenewRetry nulls.Time `json:"renew_retry"`
+	ID         int64      `json:"id"`
 }
 
 func (q *Queries) UpdateRenewingState(ctx context.Context, arg UpdateRenewingStateParams) error {

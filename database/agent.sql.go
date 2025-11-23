@@ -7,7 +7,8 @@ package database
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/gobuffalo/nulls"
 )
 
 const findAgentToSync = `-- name: FindAgentToSync :many
@@ -22,13 +23,13 @@ ORDER BY agents.last_sync, agent_certs.not_after NULLS FIRST
 `
 
 type FindAgentToSyncRow struct {
-	AgentID      int64        `json:"agent_id"`
-	Address      string       `json:"address"`
-	User         string       `json:"user"`
-	Dir          string       `json:"dir"`
-	Fingerprint  string       `json:"fingerprint"`
-	CertID       int64        `json:"cert_id"`
-	CertNotAfter sql.NullTime `json:"cert_not_after"`
+	AgentID      int64      `json:"agent_id"`
+	Address      string     `json:"address"`
+	User         string     `json:"user"`
+	Dir          string     `json:"dir"`
+	Fingerprint  string     `json:"fingerprint"`
+	CertID       int64      `json:"cert_id"`
+	CertNotAfter nulls.Time `json:"cert_not_after"`
 }
 
 func (q *Queries) FindAgentToSync(ctx context.Context) ([]FindAgentToSyncRow, error) {
@@ -70,9 +71,9 @@ WHERE agent_id = ?
 `
 
 type UpdateAgentCertNotAfterParams struct {
-	NotAfter sql.NullTime `json:"not_after"`
-	AgentID  int64        `json:"agent_id"`
-	CertID   int64        `json:"cert_id"`
+	NotAfter nulls.Time `json:"not_after"`
+	AgentID  int64      `json:"agent_id"`
+	CertID   int64      `json:"cert_id"`
 }
 
 func (q *Queries) UpdateAgentCertNotAfter(ctx context.Context, arg UpdateAgentCertNotAfterParams) error {
@@ -87,8 +88,8 @@ WHERE agents.id = ?
 `
 
 type UpdateAgentLastSyncParams struct {
-	LastSync sql.NullTime `json:"last_sync"`
-	ID       int64        `json:"id"`
+	LastSync nulls.Time `json:"last_sync"`
+	ID       int64      `json:"id"`
 }
 
 func (q *Queries) UpdateAgentLastSync(ctx context.Context, arg UpdateAgentLastSyncParams) error {

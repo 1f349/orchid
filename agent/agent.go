@@ -2,12 +2,12 @@ package agent
 
 import (
 	"context"
-	"database/sql"
 	_ "embed"
 	"fmt"
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/utils"
 	"github.com/bramvdbogaerde/go-scp"
+	"github.com/gobuffalo/nulls"
 	"golang.org/x/crypto/ssh"
 	"os"
 	"path/filepath"
@@ -186,7 +186,7 @@ func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, r
 		// that certificates updated after the database request and before the agent
 		// syncing are updated properly.
 		err = a.db.UpdateAgentLastSync(context.Background(), database.UpdateAgentLastSyncParams{
-			LastSync: sql.NullTime{Time: startTime, Valid: true},
+			LastSync: nulls.NewTime(startTime),
 			ID:       agent.agentId,
 		})
 		if err != nil {
