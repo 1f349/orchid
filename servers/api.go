@@ -140,14 +140,15 @@ func NewApiServer(listen string, db *database.Queries, signer *mjwt.KeyStore, do
 			apiError(rw, http.StatusInternalServerError, "Failed to delete certificate")
 			return
 		}
-		rw.WriteHeader(http.StatusAccepted)
+		http.Error(rw, "Removed certificate", http.StatusAccepted)
 	}))
 
 	// Endpoint for adding/removing domains to/from a certificate
-	managePutDelete := certDomainManagePUTandDELETE(db, signer, domains)
-	r.GET("/cert/:id/domains", certDomainManageGET(db, signer))
-	r.PUT("/cert/:id/domains", managePutDelete)
-	r.DELETE("/cert/:id/domains", managePutDelete)
+	// TODO: Potentially enable domain management later?
+	//managePutDelete := certDomainManagePUTandDELETE(db, signer, domains)
+	//r.GET("/cert/:id/domains", certDomainManageGET(db, signer))
+	//r.PUT("/cert/:id/domains", managePutDelete)
+	//r.DELETE("/cert/:id/domains", managePutDelete)
 
 	// Create and run http server
 	return &http.Server{
