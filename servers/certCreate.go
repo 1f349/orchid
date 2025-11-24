@@ -63,9 +63,7 @@ func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, 
 	rawBody := io.LimitReader(req.Body, MaxBodySize)
 
 	var body PostCertOptions
-	dec := json.NewDecoder(rawBody)
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&body); err != nil {
+	if err := json.NewDecoder(rawBody).Decode(&body); err != nil {
 		http.Error(rw, "Failed to parse body", http.StatusBadRequest)
 		return
 	}
