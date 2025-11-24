@@ -8,10 +8,12 @@ import (
 	"github.com/1f349/mjwt"
 	"github.com/1f349/mjwt/auth"
 	"github.com/1f349/orchid/database"
+	"github.com/1f349/orchid/database/types"
 	oUtils "github.com/1f349/orchid/utils"
 	vUtils "github.com/1f349/violet/utils"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
+	"net/netip"
 	"strconv"
 	"time"
 )
@@ -22,14 +24,17 @@ type DomainStateValue struct {
 }
 
 type Certificate struct {
-	Id         int64     `json:"id"`
-	AutoRenew  bool      `json:"auto_renew"`
-	Active     bool      `json:"active"`
-	Renewing   bool      `json:"renewing"`
-	RenewRetry time.Time `json:"renew_retry"`
-	NotAfter   time.Time `json:"not_after"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	Domains    []string  `json:"domains"`
+	Id         int64           `json:"id"`
+	Name       string          `json:"name"`
+	Authority  types.Authority `json:"authority"`
+	AutoRenew  bool            `json:"auto_renew"`
+	Active     bool            `json:"active"`
+	Renewing   bool            `json:"renewing"`
+	RenewRetry time.Time       `json:"renew_retry"`
+	NotAfter   time.Time       `json:"not_after"`
+	UpdatedAt  time.Time       `json:"updated_at"`
+	Domains    []string        `json:"domains"`
+	Addresses  []netip.Addr    `json:"addresses"`
 }
 
 // NewApiServer creates and runs a http server containing all the API

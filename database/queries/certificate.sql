@@ -12,6 +12,8 @@ LIMIT 1;
 
 -- name: FindOwnedCerts :many
 SELECT cert.id,
+       cert.name,
+       cert.authority,
        cert.auto_renew,
        cert.active,
        cert.renewing,

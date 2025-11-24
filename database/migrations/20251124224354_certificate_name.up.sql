@@ -1,0 +1,2 @@
+ALTER TABLE certificates
+    ADD COLUMN name TEXT NOT NULL DEFAULT '';

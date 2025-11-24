@@ -135,6 +135,8 @@ func (q *Queries) FindNextCert(ctx context.Context) (FindNextCertRow, error) {
 
 const findOwnedCerts = `-- name: FindOwnedCerts :many
 SELECT cert.id,
+       cert.name,
+       cert.authority,
        cert.auto_renew,
        cert.active,
        cert.renewing,
@@ -147,14 +149,16 @@ FROM certificates AS cert
 `
 
 type FindOwnedCertsRow struct {
-	ID         int64      `json:"id"`
-	AutoRenew  bool       `json:"auto_renew"`
-	Active     bool       `json:"active"`
-	Renewing   bool       `json:"renewing"`
-	RenewRetry nulls.Time `json:"renew_retry"`
-	NotAfter   nulls.Time `json:"not_after"`
-	UpdatedAt  time.Time  `json:"updated_at"`
-	Domain     string     `json:"domain"`
+	ID         int64           `json:"id"`
+	Name       string          `json:"name"`
+	Authority  types.Authority `json:"authority"`
+	AutoRenew  bool            `json:"auto_renew"`
+	Active     bool            `json:"active"`
+	Renewing   bool            `json:"renewing"`
+	RenewRetry nulls.Time      `json:"renew_retry"`
+	NotAfter   nulls.Time      `json:"not_after"`
+	UpdatedAt  time.Time       `json:"updated_at"`
+	Domain     string          `json:"domain"`
 }
 
 func (q *Queries) FindOwnedCerts(ctx context.Context) ([]FindOwnedCertsRow, error) {
@@ -168,6 +172,8 @@ func (q *Queries) FindOwnedCerts(ctx context.Context) ([]FindOwnedCertsRow, erro
 		var i FindOwnedCertsRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.Name,
+			&i.Authority,
 			&i.AutoRenew,
 			&i.Active,
 			&i.Renewing,
