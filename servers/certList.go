@@ -34,6 +34,7 @@ func certList(rw http.ResponseWriter, _ *http.Request, _ httprouter.Params, b Au
 	for _, row := range rows {
 		c := Certificate{
 			Id:         row.ID,
+			Name:       row.Name,
 			Authority:  row.Authority,
 			AutoRenew:  row.AutoRenew,
 			Active:     row.Active,
