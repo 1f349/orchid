@@ -121,7 +121,7 @@ func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, 
 		return
 	}
 
-	http.Error(rw, "Added certificate", http.StatusAccepted)
+	http.Error(rw, "Added certificate", http.StatusOK)
 }
 
 func validateCertificateOptionsOwnershipClaims(body PostCertOptions, perms *auth.PermStorage) bool {
