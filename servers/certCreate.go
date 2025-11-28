@@ -4,17 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/1f349/mjwt/auth"
+	"github.com/1f349/orchid/database"
+	"github.com/1f349/orchid/database/types"
 	"github.com/1f349/orchid/logger"
+	"github.com/1f349/orchid/utils"
+	"github.com/gobuffalo/nulls"
+	"github.com/julienschmidt/httprouter"
+	"github.com/miekg/dns"
+	"go4.org/netipx"
+	"golang.org/x/net/publicsuffix"
 	"io"
 	"net/http"
 	"net/netip"
 	"time"
-
-	"github.com/1f349/orchid/database"
-	"github.com/1f349/orchid/database/types"
-	"github.com/gobuffalo/nulls"
-	"github.com/julienschmidt/httprouter"
-	"github.com/miekg/dns"
 )
 
 type PostCertOptions struct {
@@ -73,6 +76,11 @@ func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, 
 		return
 	}
 
+	if !validateCertificateOptionsOwnershipClaims(body, b.Claims.Perms) {
+		http.Error(rw, "User does not have permission to create certificates for the requested domains or IP addresses", http.StatusForbidden)
+		return
+	}
+
 	options := database.AddCertificateParams{
 		Owner:      b.Subject,
 		Dns:        nulls.Int64{},
@@ -111,4 +119,42 @@ func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, 
 	}
 
 	http.Error(rw, "Added certificate", http.StatusAccepted)
+}
+
+func validateCertificateOptionsOwnershipClaims(body PostCertOptions, perms *auth.PermStorage) bool {
+	if !validateDomainOwnershipClaims(body.Subject.CommonName, perms) {
+		return false
+	}
+
+	for _, i := range body.Domains {
+		etldPlusOne, err := publicsuffix.EffectiveTLDPlusOne(i)
+		if err != nil {
+			return false
+		}
+		if !validateDomainOwnershipClaims(etldPlusOne, perms) {
+			return false
+		}
+	}
+
+	// Construct the IPSet from ownership claims
+	var builder netipx.IPSetBuilder
+	claims := getDomainOwnershipClaims(perms)
+	for _, i := range claims {
+		prefix, err := utils.ParseArpaToPrefix(i)
+		if err != nil {
+			continue
+		}
+		builder.AddPrefix(prefix)
+	}
+	set, err := builder.IPSet()
+	if err != nil {
+		return false
+	}
+
+	for _, i := range body.Addresses {
+		if !set.Contains(i) {
+			return false
+		}
+	}
+	return true
 }

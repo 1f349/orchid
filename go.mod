@@ -20,6 +20,7 @@ require (
 	github.com/mrmelon54/certgen v0.0.3
 	github.com/mrmelon54/exit-reload v0.0.2
 	github.com/stretchr/testify v1.11.1
+	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
 	golang.org/x/crypto v0.45.0
 	gopkg.in/yaml.v3 v3.0.1
 )

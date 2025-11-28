@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/1f349/mjwt/auth"
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/database/types"
 	"github.com/golang-jwt/jwt/v4"
@@ -119,6 +120,7 @@ func TestCertCreate(t *testing.T) {
 			RegisteredClaims: jwt.RegisteredClaims{
 				Subject: "user1234",
 			},
+			Claims: auth.AccessTokenClaims{Perms: auth.ParsePermStorage("domain:owns=example.com domain:owns=2.0.192.in-addr.arpa domain:owns=8.B.D.0.1.0.0.2.ip6.arpa")},
 		}, &testCertCreateQueries{})
 		res := rec.Result()
 		assert.Equal(t, http.StatusAccepted, res.StatusCode)
@@ -132,7 +134,7 @@ func TestCertCreate(t *testing.T) {
 			Authority: types.AuthorityLetsEncrypt,
 			AutoRenew: true,
 			Subject: Subject{
-				CommonName: "example.org",
+				CommonName: "example.com",
 				Country:    "US",
 			},
 			Domains: []string{
@@ -149,6 +151,7 @@ func TestCertCreate(t *testing.T) {
 			RegisteredClaims: jwt.RegisteredClaims{
 				Subject: "user1234",
 			},
+			Claims: auth.AccessTokenClaims{Perms: auth.ParsePermStorage("domain:owns=example.com domain:owns=2.0.192.in-addr.arpa domain:owns=8.b.d.0.1.0.0.2.ip6.arpa")},
 		}, &testCertCreateQueries{})
 		res := rec.Result()
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
