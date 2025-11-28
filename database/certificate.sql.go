@@ -15,11 +15,12 @@ import (
 )
 
 const addCertificate = `-- name: AddCertificate :exec
-INSERT INTO certificates (owner, dns, not_after, updated_at, authority, common_name, country, org, org_unit, locality, province)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO certificates (name, owner, dns, not_after, updated_at, authority, common_name, country, org, org_unit, locality, province)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type AddCertificateParams struct {
+	Name       string          `json:"name"`
 	Owner      string          `json:"owner"`
 	Dns        nulls.Int64     `json:"dns"`
 	NotAfter   nulls.Time      `json:"not_after"`
@@ -35,6 +36,7 @@ type AddCertificateParams struct {
 
 func (q *Queries) AddCertificate(ctx context.Context, arg AddCertificateParams) error {
 	_, err := q.db.ExecContext(ctx, addCertificate,
+		arg.Name,
 		arg.Owner,
 		arg.Dns,
 		arg.NotAfter,
