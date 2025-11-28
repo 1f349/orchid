@@ -43,7 +43,7 @@ func (s Subject) Validate() error {
 	if !ok {
 		return fmt.Errorf("invalid common name %s, expected a valid fully qualified domain name", s.CommonName)
 	}
-	if len(s.Country) != 2 {
+	if len(s.Country) != 0 && len(s.Country) != 2 {
 		return fmt.Errorf("invalid country %s, expected 2 characters", s.Country)
 	}
 	return nil
