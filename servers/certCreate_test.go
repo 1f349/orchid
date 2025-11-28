@@ -131,7 +131,7 @@ func TestCertCreate(t *testing.T) {
 		var buf bytes.Buffer
 		assert.NoError(t, json.NewEncoder(&buf).Encode(PostCertOptions{
 			Name:      "Example.com Certificate",
-			Authority: types.AuthorityLetsEncrypt,
+			Authority: types.Authority(255),
 			AutoRenew: true,
 			Subject: Subject{
 				CommonName: "example.com",

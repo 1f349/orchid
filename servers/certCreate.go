@@ -107,6 +107,8 @@ func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, 
 		// TODO: Implement DN42
 		http.Error(rw, "DN42 authority is currently not supported", http.StatusBadRequest)
 		return
+	case types.Authority(255):
+		err = fmt.Errorf("database error")
 	default:
 		http.Error(rw, "Invalid authority", http.StatusBadRequest)
 		return
