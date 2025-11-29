@@ -33,6 +33,14 @@ func certList(rw http.ResponseWriter, _ *http.Request, _ httprouter.Params, b Au
 			RenewRetry: row.RenewRetry.Time,
 			NotAfter:   row.NotAfter.Time,
 			UpdatedAt:  row.UpdatedAt,
+			Subject: Subject{
+				CommonName: row.CommonName,
+				Country:    row.Country,
+				Org:        row.Org,
+				OrgUnit:    row.OrgUnit,
+				Locality:   row.Locality,
+				Province:   row.Province,
+			},
 		}
 		d := row.Domain
 

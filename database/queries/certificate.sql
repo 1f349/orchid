@@ -20,6 +20,12 @@ SELECT cert.id,
        cert.renew_retry,
        cert.not_after,
        cert.updated_at,
+       cert.common_name,
+       cert.country,
+       cert.org,
+       cert.org_unit,
+       cert.locality,
+       cert.province,
        certificate_domains.domain
 FROM certificates AS cert
          INNER JOIN certificate_domains ON cert.id = certificate_domains.cert_id

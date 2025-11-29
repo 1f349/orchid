@@ -164,6 +164,12 @@ SELECT cert.id,
        cert.renew_retry,
        cert.not_after,
        cert.updated_at,
+       cert.common_name,
+       cert.country,
+       cert.org,
+       cert.org_unit,
+       cert.locality,
+       cert.province,
        certificate_domains.domain
 FROM certificates AS cert
          INNER JOIN certificate_domains ON cert.id = certificate_domains.cert_id
@@ -181,6 +187,12 @@ type FindOwnedCertsRow struct {
 	RenewRetry nulls.Time      `json:"renew_retry"`
 	NotAfter   nulls.Time      `json:"not_after"`
 	UpdatedAt  time.Time       `json:"updated_at"`
+	CommonName string          `json:"common_name"`
+	Country    string          `json:"country"`
+	Org        string          `json:"org"`
+	OrgUnit    string          `json:"org_unit"`
+	Locality   string          `json:"locality"`
+	Province   string          `json:"province"`
 	Domain     string          `json:"domain"`
 }
 
@@ -203,6 +215,12 @@ func (q *Queries) FindOwnedCerts(ctx context.Context, owner string) ([]FindOwned
 			&i.RenewRetry,
 			&i.NotAfter,
 			&i.UpdatedAt,
+			&i.CommonName,
+			&i.Country,
+			&i.Org,
+			&i.OrgUnit,
+			&i.Locality,
+			&i.Province,
 			&i.Domain,
 		); err != nil {
 			return nil, err

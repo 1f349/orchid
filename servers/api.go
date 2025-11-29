@@ -35,6 +35,7 @@ type Certificate struct {
 	UpdatedAt  time.Time       `json:"updated_at"`
 	Domains    []string        `json:"domains"`
 	Addresses  []netip.Addr    `json:"addresses"`
+	Subject    Subject         `json:"subject"`
 }
 
 // NewApiServer creates and runs a http server containing all the API
