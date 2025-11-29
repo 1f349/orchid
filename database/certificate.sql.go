@@ -172,7 +172,7 @@ SELECT cert.id,
        cert.province,
        certificate_domains.domain
 FROM certificates AS cert
-         INNER JOIN certificate_domains ON cert.id = certificate_domains.cert_id
+         LEFT JOIN certificate_domains ON cert.id = certificate_domains.cert_id
          INNER JOIN owners ON owners.cert_id = cert.id
 WHERE owners.owner = ?
 `
@@ -193,7 +193,7 @@ type FindOwnedCertsRow struct {
 	OrgUnit    string          `json:"org_unit"`
 	Locality   string          `json:"locality"`
 	Province   string          `json:"province"`
-	Domain     string          `json:"domain"`
+	Domain     sql.NullString  `json:"domain"`
 }
 
 func (q *Queries) FindOwnedCerts(ctx context.Context, owner string) ([]FindOwnedCertsRow, error) {

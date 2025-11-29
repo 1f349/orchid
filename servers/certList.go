@@ -45,13 +45,16 @@ func certList(rw http.ResponseWriter, _ *http.Request, _ httprouter.Params, b Au
 		d := row.Domain
 
 		// check in owned map
-		if cert, ok := m[c.Id]; ok {
-			cert.Domains = append(cert.Domains, d)
+		if cert, ok := m[c.Id]; ok && d.Valid {
+			cert.Domains = append(cert.Domains, d.String)
 			continue
 		}
 
 		// add to other and main if owned
-		c.Domains = []string{d}
+		c.Domains = []string{}
+		if d.Valid {
+			c.Domains = append(c.Domains, d.String)
+		}
 		m[c.Id] = &c
 	}
 
