@@ -15,13 +15,12 @@ import (
 )
 
 const addCertificate = `-- name: AddCertificate :exec
-INSERT INTO certificates (name, owner, dns, not_after, updated_at, authority, common_name, country, org, org_unit, locality, province)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO certificates (name, dns, not_after, updated_at, authority, common_name, country, org, org_unit, locality, province)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type AddCertificateParams struct {
 	Name       string          `json:"name"`
-	Owner      string          `json:"owner"`
 	Dns        nulls.Int64     `json:"dns"`
 	NotAfter   nulls.Time      `json:"not_after"`
 	UpdatedAt  time.Time       `json:"updated_at"`
@@ -37,7 +36,6 @@ type AddCertificateParams struct {
 func (q *Queries) AddCertificate(ctx context.Context, arg AddCertificateParams) error {
 	_, err := q.db.ExecContext(ctx, addCertificate,
 		arg.Name,
-		arg.Owner,
 		arg.Dns,
 		arg.NotAfter,
 		arg.UpdatedAt,
@@ -49,6 +47,21 @@ func (q *Queries) AddCertificate(ctx context.Context, arg AddCertificateParams) 
 		arg.Locality,
 		arg.Province,
 	)
+	return err
+}
+
+const addCertificateOwner = `-- name: AddCertificateOwner :exec
+INSERT INTO owners (owner, cert_id)
+VALUES (?, ?)
+`
+
+type AddCertificateOwnerParams struct {
+	Owner  string `json:"owner"`
+	CertID int64  `json:"cert_id"`
+}
+
+func (q *Queries) AddCertificateOwner(ctx context.Context, arg AddCertificateOwnerParams) error {
+	_, err := q.db.ExecContext(ctx, addCertificateOwner, arg.Owner, arg.CertID)
 	return err
 }
 
@@ -85,22 +98,25 @@ func (q *Queries) ChangeCertificateDetails(ctx context.Context, arg ChangeCertif
 }
 
 const checkCertOwner = `-- name: CheckCertOwner :one
-SELECT id, owner
-FROM certificates
-WHERE active = 1
-  AND id = ?
+SELECT cert.id
+FROM certificates AS cert
+         INNER JOIN owners ON owners.cert_id = cert.id
+WHERE cert.active = 1
+  AND cert.id = ?
+  AND owners.owner = ?
+LIMIT 1
 `
 
-type CheckCertOwnerRow struct {
+type CheckCertOwnerParams struct {
 	ID    int64  `json:"id"`
 	Owner string `json:"owner"`
 }
 
-func (q *Queries) CheckCertOwner(ctx context.Context, id int64) (CheckCertOwnerRow, error) {
-	row := q.db.QueryRowContext(ctx, checkCertOwner, id)
-	var i CheckCertOwnerRow
-	err := row.Scan(&i.ID, &i.Owner)
-	return i, err
+func (q *Queries) CheckCertOwner(ctx context.Context, arg CheckCertOwnerParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, checkCertOwner, arg.ID, arg.Owner)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const findNextCert = `-- name: FindNextCert :one
@@ -148,7 +164,8 @@ SELECT cert.id,
        certificate_domains.domain
 FROM certificates AS cert
          INNER JOIN certificate_domains ON cert.id = certificate_domains.cert_id
-WHERE owner = ?
+         INNER JOIN owners ON owners.cert_id = cert.id
+WHERE owners.owner = ?
 `
 
 type FindOwnedCertsRow struct {

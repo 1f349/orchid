@@ -115,18 +115,18 @@ func checkCertOwner(db *database.Queries, idStr string, b AuthClaims) (int64, er
 	}
 
 	// run database query
-	row, err := db.CheckCertOwner(context.Background(), int64(rawId))
+	row, err := db.CheckCertOwner(context.Background(), database.CheckCertOwnerParams{ID: int64(rawId), Owner: b.Subject})
 	if err != nil {
 		return 0, err
 	}
 
 	// check the owner is the mjwt token subject
-	if b.Subject != row.Owner {
-		return row.ID, fmt.Errorf("not the certificate owner")
+	if row == 0 {
+		return 0, fmt.Errorf("not the certificate owner")
 	}
 
 	// it's all valid, return the values
-	return row.ID, nil
+	return row, nil
 }
 
 // getDomainOwnershipClaims returns the domains marked as owned from PermStorage,

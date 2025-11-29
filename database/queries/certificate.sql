@@ -23,7 +23,8 @@ SELECT cert.id,
        certificate_domains.domain
 FROM certificates AS cert
          INNER JOIN certificate_domains ON cert.id = certificate_domains.cert_id
-WHERE owner = ?;
+         INNER JOIN owners ON owners.cert_id = cert.id
+WHERE owners.owner = ?;
 
 -- name: UpdateRenewingState :exec
 UPDATE certificates
@@ -44,9 +45,13 @@ SET renewing    = 0,
     updated_at  = ?
 WHERE id = ?;
 
--- name: AddCertificate :exec
-INSERT INTO certificates (name, owner, dns, not_after, updated_at, authority, common_name, country, org, org_unit, locality, province)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+-- name: AddCertificate :execid
+INSERT INTO certificates (name, dns, not_after, updated_at, authority, common_name, country, org, org_unit, locality, province)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- name: AddCertificateOwner :exec
+INSERT INTO owners (owner, cert_id)
+VALUES (?, ?);
 
 -- name: ChangeCertificateDetails :exec
 UPDATE certificates
@@ -64,7 +69,10 @@ SET active = 0
 WHERE id = ?;
 
 -- name: CheckCertOwner :one
-SELECT id, owner
-FROM certificates
-WHERE active = 1
-  AND id = ?;
+SELECT cert.id
+FROM certificates AS cert
+         INNER JOIN owners ON owners.cert_id = cert.id
+WHERE cert.active = 1
+  AND cert.id = ?
+  AND owners.owner = ?
+LIMIT 1;

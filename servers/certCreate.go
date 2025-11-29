@@ -52,7 +52,9 @@ func (s Subject) Validate() error {
 const MaxBodySize = 1024 * 1024
 
 type postCertQueries interface {
-	AddCertificate(ctx context.Context, opts database.AddCertificateParams) error
+	AddCertificate(ctx context.Context, opts database.AddCertificateParams) (int64, error)
+	AddCertificateOwner(ctx context.Context, opts database.AddCertificateOwnerParams) error
+	UseTx(ctx context.Context, cb func(tx database.Queries) error) error
 }
 
 func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, b AuthClaims, db postCertQueries) {
@@ -83,7 +85,6 @@ func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, 
 
 	options := database.AddCertificateParams{
 		Name:       body.Name,
-		Owner:      b.Subject,
 		Dns:        nulls.Int64{},
 		NotAfter:   nulls.Time{},
 		UpdatedAt:  time.Now(),
@@ -99,7 +100,16 @@ func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, 
 	var err error
 	switch body.Authority {
 	case types.AuthorityLetsEncrypt:
-		err = db.AddCertificate(req.Context(), options)
+		err = db.UseTx(req.Context(), func(tx database.Queries) error {
+			id, err := db.AddCertificate(req.Context(), options)
+			if err != nil {
+				return err
+			}
+			return db.AddCertificateOwner(req.Context(), database.AddCertificateOwnerParams{
+				Owner:  b.Subject,
+				CertID: id,
+			})
+		})
 	case types.AuthorityCustom:
 		// TODO: Implement Custom
 		http.Error(rw, "Custom authority is currently not supported", http.StatusBadRequest)

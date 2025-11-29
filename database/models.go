@@ -29,7 +29,6 @@ type AgentCert struct {
 
 type Certificate struct {
 	ID               int64           `json:"id"`
-	Owner            string          `json:"owner"`
 	Dns              nulls.Int64     `json:"dns"`
 	AutoRenew        bool            `json:"auto_renew"`
 	Active           bool            `json:"active"`
@@ -61,4 +60,10 @@ type DnsAcme struct {
 	Type  string `json:"type"`
 	Email string `json:"email"`
 	Token string `json:"token"`
+}
+
+type Owner struct {
+	ID     int64  `json:"id"`
+	Owner  string `json:"owner"`
+	CertID int64  `json:"cert_id"`
 }
