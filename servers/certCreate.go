@@ -54,7 +54,7 @@ const MaxBodySize = 1024 * 1024
 type postCertQueries interface {
 	AddCertificate(ctx context.Context, opts database.AddCertificateParams) (int64, error)
 	AddCertificateOwner(ctx context.Context, opts database.AddCertificateOwnerParams) error
-	UseTx(ctx context.Context, cb func(tx database.Queries) error) error
+	UseTx(ctx context.Context, cb func(tx *database.Queries) error) error
 }
 
 func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, b AuthClaims, db postCertQueries) {
@@ -100,7 +100,7 @@ func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, 
 	var err error
 	switch body.Authority {
 	case types.AuthorityLetsEncrypt:
-		err = db.UseTx(req.Context(), func(tx database.Queries) error {
+		err = db.UseTx(req.Context(), func(tx *database.Queries) error {
 			id, err := db.AddCertificate(req.Context(), options)
 			if err != nil {
 				return err

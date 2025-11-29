@@ -26,10 +26,22 @@ func TestSubject(t *testing.T) {
 
 type testCertCreateQueries struct{}
 
-func (t *testCertCreateQueries) AddCertificate(ctx context.Context, opts database.AddCertificateParams) error {
+func (t *testCertCreateQueries) AddCertificate(ctx context.Context, opts database.AddCertificateParams) (int64, error) {
 	if opts.CommonName != "example.com" {
+		return 0, fmt.Errorf("database insert failed")
+	}
+	return 1, nil
+}
+
+func (t *testCertCreateQueries) AddCertificateOwner(ctx context.Context, opts database.AddCertificateOwnerParams) error {
+	if opts.Owner != "user1234" || opts.CertID != 1 {
 		return fmt.Errorf("database insert failed")
 	}
+	return nil
+}
+
+func (t *testCertCreateQueries) UseTx(ctx context.Context, cb func(tx *database.Queries) error) error {
+	// TODO: Implement this UseTx call properly
 	return nil
 }
 

@@ -45,7 +45,7 @@ SET renewing    = 0,
     updated_at  = ?
 WHERE id = ?;
 
--- name: AddCertificate :execid
+-- name: AddCertificate :execlastid
 INSERT INTO certificates (name, dns, not_after, updated_at, authority, common_name, country, org, org_unit, locality, province)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 

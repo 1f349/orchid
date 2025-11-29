@@ -14,7 +14,7 @@ import (
 	"github.com/gobuffalo/nulls"
 )
 
-const addCertificate = `-- name: AddCertificate :exec
+const addCertificate = `-- name: AddCertificate :execlastid
 INSERT INTO certificates (name, dns, not_after, updated_at, authority, common_name, country, org, org_unit, locality, province)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
@@ -33,8 +33,8 @@ type AddCertificateParams struct {
 	Province   string          `json:"province"`
 }
 
-func (q *Queries) AddCertificate(ctx context.Context, arg AddCertificateParams) error {
-	_, err := q.db.ExecContext(ctx, addCertificate,
+func (q *Queries) AddCertificate(ctx context.Context, arg AddCertificateParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, addCertificate,
 		arg.Name,
 		arg.Dns,
 		arg.NotAfter,
@@ -47,7 +47,10 @@ func (q *Queries) AddCertificate(ctx context.Context, arg AddCertificateParams) 
 		arg.Locality,
 		arg.Province,
 	)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return result.LastInsertId()
 }
 
 const addCertificateOwner = `-- name: AddCertificateOwner :exec
