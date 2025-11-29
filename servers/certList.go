@@ -7,6 +7,7 @@ import (
 	"github.com/1f349/orchid/logger"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
+	"net/netip"
 	"slices"
 )
 
@@ -55,6 +56,8 @@ func certList(rw http.ResponseWriter, _ *http.Request, _ httprouter.Params, b Au
 		if d.Valid {
 			c.Domains = append(c.Domains, d.String)
 		}
+		// TODO: Add support for reading IP addresses from the database
+		c.Addresses = []netip.Addr{}
 		m[c.Id] = &c
 	}
 
