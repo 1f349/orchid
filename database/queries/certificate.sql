@@ -38,6 +38,12 @@ SET renewing    = ?,
     renew_retry = ?
 WHERE id = ?;
 
+-- name: TriggerManualRenew :exec
+UPDATE certificates
+SET renew_retry = DATETIME('now'),
+    not_after   = NULL
+WHERE id = ?;
+
 -- name: SetRetryFlag :exec
 UPDATE certificates
 SET renew_retry = DATETIME('now', '+1 day')

@@ -279,6 +279,18 @@ func (q *Queries) SetRetryFlag(ctx context.Context, id int64) error {
 	return err
 }
 
+const triggerManualRenew = `-- name: TriggerManualRenew :exec
+UPDATE certificates
+SET renew_retry = DATETIME('now'),
+    not_after   = NULL
+WHERE id = ?
+`
+
+func (q *Queries) TriggerManualRenew(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, triggerManualRenew, id)
+	return err
+}
+
 const updateCertAfterRenewal = `-- name: UpdateCertAfterRenewal :exec
 UPDATE certificates
 SET renewing    = 0,

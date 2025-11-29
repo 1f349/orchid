@@ -81,6 +81,14 @@ func NewApiServer(listen string, db *database.Queries, signer *mjwt.KeyStore, do
 		}
 		http.Error(rw, "Removed certificate", http.StatusAccepted)
 	}))
+	r.POST("/certs/:id/renew", checkAuthForCertificate(signer, "orchid:cert", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId int64) {
+		err := db.TriggerManualRenew(req.Context(), certId)
+		if err != nil {
+			apiError(rw, http.StatusInternalServerError, "Failed to renew certificate")
+			return
+		}
+		http.Error(rw, "Renewing certificate", http.StatusOK)
+	}))
 
 	// Endpoint for adding/removing domains to/from a certificate
 	// TODO: Potentially enable domain management later?
