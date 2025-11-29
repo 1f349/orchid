@@ -70,6 +70,9 @@ func NewApiServer(listen string, db *database.Queries, signer *mjwt.KeyStore, do
 	r.POST("/certs", checkAuthWithPerm(signer, "orchid:cert", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims) {
 		certCreate(rw, req, params, b, db)
 	}))
+	r.PATCH("/certs", checkAuthForCertificate(signer, "orchid:cert", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId int64) {
+		certPatch(rw, req, params, b, certId, db)
+	}))
 	r.DELETE("/certs/:id", checkAuthForCertificate(signer, "orchid:cert", db, func(rw http.ResponseWriter, req *http.Request, params httprouter.Params, b AuthClaims, certId int64) {
 		err := db.RemoveCertificate(req.Context(), certId)
 		if err != nil {

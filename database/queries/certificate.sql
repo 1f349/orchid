@@ -83,3 +83,8 @@ WHERE cert.active = 1
   AND cert.id = ?
   AND owners.owner = ?
 LIMIT 1;
+
+-- name: SetCertificateAutoRenew :exec
+UPDATE certificates
+SET auto_renew = ?
+WHERE id = ?;

@@ -252,6 +252,22 @@ func (q *Queries) RemoveCertificate(ctx context.Context, id int64) error {
 	return err
 }
 
+const setCertificateAutoRenew = `-- name: SetCertificateAutoRenew :exec
+UPDATE certificates
+SET auto_renew = ?
+WHERE id = ?
+`
+
+type SetCertificateAutoRenewParams struct {
+	AutoRenew bool  `json:"auto_renew"`
+	ID        int64 `json:"id"`
+}
+
+func (q *Queries) SetCertificateAutoRenew(ctx context.Context, arg SetCertificateAutoRenewParams) error {
+	_, err := q.db.ExecContext(ctx, setCertificateAutoRenew, arg.AutoRenew, arg.ID)
+	return err
+}
+
 const setRetryFlag = `-- name: SetRetryFlag :exec
 UPDATE certificates
 SET renew_retry = DATETIME('now', '+1 day')
