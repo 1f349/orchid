@@ -148,6 +148,7 @@ SELECT cert.id,
        certificate_domains.domain
 FROM certificates AS cert
          INNER JOIN certificate_domains ON cert.id = certificate_domains.cert_id
+WHERE owner = ?
 `
 
 type FindOwnedCertsRow struct {
@@ -163,8 +164,8 @@ type FindOwnedCertsRow struct {
 	Domain     string          `json:"domain"`
 }
 
-func (q *Queries) FindOwnedCerts(ctx context.Context) ([]FindOwnedCertsRow, error) {
-	rows, err := q.db.QueryContext(ctx, findOwnedCerts)
+func (q *Queries) FindOwnedCerts(ctx context.Context, owner string) ([]FindOwnedCertsRow, error) {
+	rows, err := q.db.QueryContext(ctx, findOwnedCerts, owner)
 	if err != nil {
 		return nil, err
 	}

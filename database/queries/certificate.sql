@@ -22,7 +22,8 @@ SELECT cert.id,
        cert.updated_at,
        certificate_domains.domain
 FROM certificates AS cert
-         INNER JOIN certificate_domains ON cert.id = certificate_domains.cert_id;
+         INNER JOIN certificate_domains ON cert.id = certificate_domains.cert_id
+WHERE owner = ?;
 
 -- name: UpdateRenewingState :exec
 UPDATE certificates
