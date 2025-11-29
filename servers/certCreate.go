@@ -85,6 +85,8 @@ func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, 
 
 	options := database.AddCertificateParams{
 		Name:       body.Name,
+		AutoRenew:  body.AutoRenew,
+		Active:     true,
 		Dns:        nulls.Int64{},
 		NotAfter:   nulls.Time{},
 		UpdatedAt:  time.Now(),

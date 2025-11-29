@@ -52,8 +52,9 @@ SET renewing    = 0,
 WHERE id = ?;
 
 -- name: AddCertificate :execlastid
-INSERT INTO certificates (name, dns, not_after, updated_at, authority, common_name, country, org, org_unit, locality, province)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO certificates (name, auto_renew, active, dns, not_after, updated_at, authority, common_name, country, org,
+                          org_unit, locality, province)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: AddCertificateOwner :exec
 INSERT INTO owners (owner, cert_id)
