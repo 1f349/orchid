@@ -1,5 +1,5 @@
 -- name: FindNextCert :one
-SELECT cert.id, cert.not_after
+SELECT cert.id, cert.not_after, cert.common_name
 FROM certificates AS cert
 WHERE cert.active = 1
   AND (cert.auto_renew = 1 OR cert.not_after IS NULL)

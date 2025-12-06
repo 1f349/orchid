@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 )
@@ -298,6 +299,7 @@ func (s *Service) findNextCertificateToRenew() (*localCertData, error) {
 
 	d.id = row.ID
 	d.notAfter = row.NotAfter.Time
+	d.commonName = row.CommonName
 
 	return d, nil
 }
@@ -307,6 +309,20 @@ func (s *Service) fetchDomains(localData *localCertData) ([]string, error) {
 	domains, err := s.db.GetDomainsForCertificate(context.Background(), localData.id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch domains for certificate: %d: %w", localData.id, err)
+	}
+
+	sort.Strings(domains)
+
+	// Add 1 in case the common name needs adding
+	out := make([]string, 0, len(domains)+1)
+	out = append(out, localData.commonName)
+
+	// Add domains, skip common name
+	for _, d := range domains {
+		if d == localData.commonName {
+			continue
+		}
+		out = append(out, d)
 	}
 
 	// if no domains were found then the renewal will fail

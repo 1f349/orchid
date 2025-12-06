@@ -128,7 +128,7 @@ func (q *Queries) CheckCertOwner(ctx context.Context, arg CheckCertOwnerParams) 
 }
 
 const findNextCert = `-- name: FindNextCert :one
-SELECT cert.id, cert.not_after
+SELECT cert.id, cert.not_after, cert.common_name
 FROM certificates AS cert
 WHERE cert.active = 1
   AND (cert.auto_renew = 1 OR cert.not_after IS NULL)
@@ -140,14 +140,15 @@ LIMIT 1
 `
 
 type FindNextCertRow struct {
-	ID       int64      `json:"id"`
-	NotAfter nulls.Time `json:"not_after"`
+	ID         int64      `json:"id"`
+	NotAfter   nulls.Time `json:"not_after"`
+	CommonName string     `json:"common_name"`
 }
 
 func (q *Queries) FindNextCert(ctx context.Context) (FindNextCertRow, error) {
 	row := q.db.QueryRowContext(ctx, findNextCert)
 	var i FindNextCertRow
-	err := row.Scan(&i.ID, &i.NotAfter)
+	err := row.Scan(&i.ID, &i.NotAfter, &i.CommonName)
 	return i, err
 }
 
