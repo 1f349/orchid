@@ -136,7 +136,7 @@ func TestCertCreate(t *testing.T) {
 		}, &testCertCreateQueries{})
 		res := rec.Result()
 		assert.Equal(t, http.StatusOK, res.StatusCode)
-		assert.Equal(t, "Added certificate\n", rec.Body.String())
+		assert.Equal(t, "{\"result\":\"Added certificate\"}\n", rec.Body.String())
 	})
 	t.Run("Database error", func(t *testing.T) {
 		rec := httptest.NewRecorder()
