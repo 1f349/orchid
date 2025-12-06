@@ -7,7 +7,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/1f349/orchid/database/types"
@@ -128,9 +127,8 @@ func (q *Queries) CheckCertOwner(ctx context.Context, arg CheckCertOwnerParams) 
 }
 
 const findNextCert = `-- name: FindNextCert :one
-SELECT cert.id, cert.not_after, dns_acme.type, dns_acme.token
+SELECT cert.id, cert.not_after
 FROM certificates AS cert
-         LEFT OUTER JOIN dns_acme ON cert.dns = dns_acme.id
 WHERE cert.active = 1
   AND (cert.auto_renew = 1 OR cert.not_after IS NULL)
   AND cert.renewing = 0
@@ -141,21 +139,14 @@ LIMIT 1
 `
 
 type FindNextCertRow struct {
-	ID       int64          `json:"id"`
-	NotAfter nulls.Time     `json:"not_after"`
-	Type     sql.NullString `json:"type"`
-	Token    sql.NullString `json:"token"`
+	ID       int64      `json:"id"`
+	NotAfter nulls.Time `json:"not_after"`
 }
 
 func (q *Queries) FindNextCert(ctx context.Context) (FindNextCertRow, error) {
 	row := q.db.QueryRowContext(ctx, findNextCert)
 	var i FindNextCertRow
-	err := row.Scan(
-		&i.ID,
-		&i.NotAfter,
-		&i.Type,
-		&i.Token,
-	)
+	err := row.Scan(&i.ID, &i.NotAfter)
 	return i, err
 }
 

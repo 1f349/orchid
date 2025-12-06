@@ -13,14 +13,12 @@ import (
 	"fmt"
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/pebble"
-	"github.com/1f349/orchid/providers/verbena"
+	"github.com/1f349/orchid/providers/joint"
 	"github.com/1f349/orchid/utils"
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge"
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"github.com/go-acme/lego/v4/lego"
-	"github.com/go-acme/lego/v4/providers/dns/duckdns"
-	"github.com/go-acme/lego/v4/providers/dns/namesilo"
 	"github.com/go-acme/lego/v4/registration"
 	"github.com/gobuffalo/nulls"
 	"math/rand"
@@ -30,8 +28,6 @@ import (
 	"sync"
 	"time"
 )
-
-var ErrUnsupportedDNSProvider = errors.New("unsupported DNS provider")
 
 const (
 	DomainStateNormal  = 0
@@ -67,6 +63,8 @@ type Service struct {
 	keyDir     string
 	insecure   bool
 	client     *lego.Client
+
+	dnsProvider challenge.Provider
 }
 
 // NewService creates a new certificate renewal service.
@@ -83,6 +81,12 @@ func NewService(wg *sync.WaitGroup, db *database.Queries, httpAcme challenge.Pro
 		certDir:  certDir,
 		keyDir:   keyDir,
 		insecure: leConfig.insecure,
+
+		dnsProvider: joint.NewDNSProviderConfig(&joint.Config{
+			DomainQuery:        db,
+			PropagationTimeout: 1 * time.Hour,
+			PollingInterval:    15 * time.Minute,
+		}),
 	}
 
 	// make certDir and keyDir
@@ -293,8 +297,6 @@ func (s *Service) findNextCertificateToRenew() (*localCertData, error) {
 	}
 
 	d.id = row.ID
-	d.dns.name = row.Type
-	d.dns.token = row.Token
 	d.notAfter = row.NotAfter.Time
 
 	return d, nil
@@ -342,37 +344,6 @@ func (s *Service) setupLegoClient() (*lego.Client, error) {
 	// return and use the client
 	s.leAccount.reg = register
 	return client, nil
-}
-
-// getDnsProvider loads a DNS challenge provider using the provided name and
-// token
-func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error) {
-	Logger.Info("Loading dns provider", "name", name, "token", token[:3]+"*****")
-	switch name {
-	case "duckdns":
-		return duckdns.NewDNSProviderConfig(&duckdns.Config{
-			Token:              token,
-			PropagationTimeout: 20 * time.Minute,
-			PollingInterval:    5 * time.Minute,
-		})
-	case "namesilo":
-		return namesilo.NewDNSProviderConfig(&namesilo.Config{
-			APIKey:             token,
-			PropagationTimeout: 2 * time.Hour,
-			PollingInterval:    15 * time.Minute,
-			TTL:                3600,
-		})
-	case "1f349":
-		return verbena.NewDNSProviderConfig(&verbena.Config{
-			Host:               "https://api.1f349.com/v1/verbena",
-			APIKey:             token,
-			PropagationTimeout: 20 * time.Minute,
-			PollingInterval:    5 * time.Minute,
-			TTL:                3600,
-		})
-	default:
-		return nil, ErrUnsupportedDNSProvider
-	}
 }
 
 // getPrivateKey reads the private key for the specified certificate id, or
@@ -474,14 +445,9 @@ func (s *Service) renewCertInternal(localData *localCertData) (*x509.Certificate
 		dnsAddr := testDnsOptions.GetDnsAddrs()
 		Logger.Info("Using testDnsOptions with DNS server", "addr", dnsAddr)
 		_ = s.client.Challenge.SetDNS01Provider(testDnsOptions, dns01.AddRecursiveNameservers(dnsAddr), dns01.DisableAuthoritativeNssPropagationRequirement())
-	} else if localData.dns.name.Valid && localData.dns.token.Valid {
-		// if the dns name and token are "valid" meaning non-null in this case
-		// set up the specific dns provider requested
-		dnsProv, err := s.getDnsProvider(localData.dns.name.String, localData.dns.token.String)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to resolve dns provider: %w", err)
-		}
-		_ = s.client.Challenge.SetDNS01Provider(dnsProv)
+	} else {
+		// use the joint DNS provider to work with all available domains
+		_ = s.client.Challenge.SetDNS01Provider(s.dnsProvider)
 	}
 
 	// obtain new certificate - this call will hang until a certificate is ready

@@ -1,7 +1,6 @@
 -- name: FindNextCert :one
-SELECT cert.id, cert.not_after, dns_acme.type, dns_acme.token
+SELECT cert.id, cert.not_after
 FROM certificates AS cert
-         LEFT OUTER JOIN dns_acme ON cert.dns = dns_acme.id
 WHERE cert.active = 1
   AND (cert.auto_renew = 1 OR cert.not_after IS NULL)
   AND cert.renewing = 0

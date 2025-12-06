@@ -55,11 +55,11 @@ type CertificateDomain struct {
 	State    int64  `json:"state"`
 }
 
-type DnsAcme struct {
-	ID    int64  `json:"id"`
-	Type  string `json:"type"`
-	Email string `json:"email"`
-	Token string `json:"token"`
+type DnsApiToken struct {
+	ID     int64  `json:"id"`
+	Domain string `json:"domain"`
+	Source string `json:"source"`
+	Token  string `json:"token"`
 }
 
 type Owner struct {

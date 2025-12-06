@@ -3,6 +3,7 @@ module github.com/1f349/orchid
 go 1.24.2
 
 require (
+	github.com/1f349/cache v0.0.7
 	github.com/1f349/mjwt v0.4.1
 	github.com/1f349/verbena v0.0.5
 	github.com/1f349/violet v0.0.14
@@ -22,6 +23,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
 	golang.org/x/crypto v0.45.0
+	golang.org/x/net v0.47.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -60,7 +62,6 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6 // indirect
 	golang.org/x/mod v0.30.0 // indirect
-	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/term v0.37.0 // indirect
