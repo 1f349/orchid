@@ -352,8 +352,8 @@ func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error)
 	case "duckdns":
 		return duckdns.NewDNSProviderConfig(&duckdns.Config{
 			Token:              token,
-			PropagationTimeout: 15 * time.Minute,
-			PollingInterval:    2 * time.Minute,
+			PropagationTimeout: 20 * time.Minute,
+			PollingInterval:    5 * time.Minute,
 		})
 	case "namesilo":
 		return namesilo.NewDNSProviderConfig(&namesilo.Config{
@@ -366,8 +366,8 @@ func (s *Service) getDnsProvider(name, token string) (challenge.Provider, error)
 		return verbena.NewDNSProviderConfig(&verbena.Config{
 			Host:               "https://api.1f349.com/v1/verbena",
 			APIKey:             token,
-			PropagationTimeout: 2 * time.Hour,
-			PollingInterval:    15 * time.Minute,
+			PropagationTimeout: 20 * time.Minute,
+			PollingInterval:    5 * time.Minute,
 			TTL:                3600,
 		})
 	default:
