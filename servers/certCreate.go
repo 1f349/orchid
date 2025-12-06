@@ -54,6 +54,7 @@ const MaxBodySize = 1024 * 1024
 type postCertQueries interface {
 	AddCertificate(ctx context.Context, opts database.AddCertificateParams) (int64, error)
 	AddCertificateOwner(ctx context.Context, opts database.AddCertificateOwnerParams) error
+	AddDomains(ctx context.Context, arg database.AddDomainsParams) error
 	UseTx(ctx context.Context, cb func(tx *database.Queries) error) error
 }
 
@@ -103,14 +104,28 @@ func certCreate(rw http.ResponseWriter, req *http.Request, _ httprouter.Params, 
 	switch body.Authority {
 	case types.AuthorityLetsEncrypt:
 		err = db.UseTx(req.Context(), func(tx *database.Queries) error {
-			id, err := db.AddCertificate(req.Context(), options)
+			id, err := tx.AddCertificate(req.Context(), options)
 			if err != nil {
 				return err
 			}
-			return db.AddCertificateOwner(req.Context(), database.AddCertificateOwnerParams{
+			err = tx.AddCertificateOwner(req.Context(), database.AddCertificateOwnerParams{
 				Owner:  b.Subject,
 				CertID: id,
 			})
+			if err != nil {
+				return err
+			}
+			for _, i := range body.Domains {
+				err = tx.AddDomains(req.Context(), database.AddDomainsParams{
+					CertID: id,
+					Domain: i,
+					State:  0,
+				})
+				if err != nil {
+					return err
+				}
+			}
+			return nil
 		})
 	case types.AuthorityCustom:
 		// TODO: Implement Custom
