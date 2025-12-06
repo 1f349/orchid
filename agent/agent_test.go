@@ -296,6 +296,8 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 				fileSizeStr := must(r.ReadString(' '))
 				fileSize := must(strconv.Atoi(fileSizeStr[:len(fileSizeStr)-1]))
 
+				time.Sleep(5 * time.Second)
+
 				fileName := strings.TrimSpace(string(must(io.ReadAll(r))))
 				if fileName != filepath.Base(*fullFilePath) {
 					panic(fmt.Errorf("invalid file name (expected \"%s\" from full path \"%s\" but got \"%s\")", filepath.Base(*fullFilePath), *fullFilePath, fileName))
