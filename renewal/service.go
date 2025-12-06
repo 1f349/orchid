@@ -326,10 +326,10 @@ func (s *Service) fetchDomains(localData *localCertData) ([]string, error) {
 	}
 
 	// if no domains were found then the renewal will fail
-	if len(domains) == 0 {
+	if len(out) == 0 {
 		return nil, fmt.Errorf("no domains registered for certificate: %d", localData.id)
 	}
-	return domains, nil
+	return out, nil
 }
 
 func (s *Service) setupLegoClient() (*lego.Client, error) {
