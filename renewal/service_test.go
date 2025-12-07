@@ -170,7 +170,7 @@ func TestPebbleRenewal(t *testing.T) {
 			_, err := db2.Exec("DELETE FROM certificate_domains")
 			assert.NoError(t, err)
 
-			_, err = db2.Exec(`INSERT INTO certificates (dns, auto_renew, active, renewing, renew_retry, not_after, updated_at) VALUES (1, 1, 1, 0, '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00');`)
+			_, err = db2.Exec(`INSERT INTO certificates (dns, auto_renew, active, renewing, renew_retry, not_after, updated_at, common_name) VALUES (1, 1, 1, 0, '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00', ?);`, i.domains[0])
 			assert.NoError(t, err)
 			for _, j := range i.domains {
 				_, err = db2.Exec(`INSERT INTO certificate_domains (cert_id, domain) VALUES (1, ?)`, j)
