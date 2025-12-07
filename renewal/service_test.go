@@ -163,7 +163,6 @@ func TestPebbleRenewal(t *testing.T) {
 
 	for _, i := range tests {
 		t.Run(i.name, func(t *testing.T) {
-			t.Parallel()
 			service, db2 := setupPebbleTest(t, serverTls)
 			defer deconstructPebbleTest(t, service)
 			//goland:noinspection SqlWithoutWhere
