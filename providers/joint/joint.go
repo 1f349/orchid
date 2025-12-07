@@ -92,7 +92,7 @@ func (d *DNSProvider) makeProvider(source string, token string) (challenge.Provi
 	}
 }
 
-func (d *DNSProvider) ResolveProvider(domain string) (challenge.Provider, error) {
+func (d *DNSProvider) fetchProviderFromDatabase(domain string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -100,7 +100,7 @@ func (d *DNSProvider) ResolveProvider(domain string) (challenge.Provider, error)
 	rows, err := d.config.DomainQuery.FindDomainAcmeToken(ctx, domain)
 	cancel()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, i := range rows {
 		dnsProvider, err := d.makeProvider(i.Source, i.Token)
@@ -116,8 +116,17 @@ func (d *DNSProvider) ResolveProvider(domain string) (challenge.Provider, error)
 		}
 	}
 
+	return nil
+}
+
+func (d *DNSProvider) ResolveProvider(domain string) (challenge.Provider, error) {
 	var provider challenge.Provider
 	for {
+		err := d.fetchProviderFromDatabase(domain)
+		if err == nil {
+			logger.Logger.Warn("Failed to fetch providers from the database", "domain", domain, "err", err)
+		}
+
 		// Resolve the provider from the cache
 		item, ok := d.domainCache.Get(domain)
 		if ok {
