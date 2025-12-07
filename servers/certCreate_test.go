@@ -40,6 +40,13 @@ func (t *testCertCreateQueries) AddCertificateOwner(ctx context.Context, opts da
 	return nil
 }
 
+func (t *testCertCreateQueries) AddDomains(ctx context.Context, arg database.AddDomainsParams) error {
+	if arg.Domain != "example.com" && arg.CertID != 1 && arg.State != 0 {
+		return fmt.Errorf("database insert failed")
+	}
+	return nil
+}
+
 func (t *testCertCreateQueries) UseTx(ctx context.Context, cb func(tx *database.Queries) error) error {
 	// TODO: Implement this UseTx call properly
 	return nil
