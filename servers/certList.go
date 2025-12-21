@@ -31,7 +31,7 @@ func certList(rw http.ResponseWriter, _ *http.Request, _ httprouter.Params, b Au
 			AutoRenew:  row.AutoRenew,
 			Active:     row.Active,
 			Renewing:   row.Renewing,
-			RenewRetry: row.RenewRetry.Time,
+			RenewRetry: row.RenewRetry,
 			NotAfter:   row.NotAfter.Time,
 			UpdatedAt:  row.UpdatedAt,
 			Subject: Subject{

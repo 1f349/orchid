@@ -11,6 +11,7 @@ import (
 	"github.com/1f349/orchid/database/types"
 	oUtils "github.com/1f349/orchid/utils"
 	vUtils "github.com/1f349/violet/utils"
+	"github.com/gobuffalo/nulls"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"net/netip"
@@ -30,7 +31,7 @@ type Certificate struct {
 	AutoRenew  bool            `json:"auto_renew"`
 	Active     bool            `json:"active"`
 	Renewing   bool            `json:"renewing"`
-	RenewRetry time.Time       `json:"renew_retry"`
+	RenewRetry nulls.Time      `json:"renew_retry"`
 	NotAfter   time.Time       `json:"not_after"`
 	UpdatedAt  time.Time       `json:"updated_at"`
 	Domains    []string        `json:"domains"`
