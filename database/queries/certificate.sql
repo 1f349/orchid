@@ -51,7 +51,7 @@ WHERE id = ?;
 -- name: UpdateCertAfterRenewal :exec
 UPDATE certificates
 SET renewing    = 0,
-    renew_retry = 0,
+    renew_retry = NULL,
     not_after   = ?,
     updated_at  = ?
 WHERE id = ?;
