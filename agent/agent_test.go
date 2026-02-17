@@ -174,11 +174,9 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 	addrPort := tcp.Addr().(*net.TCPAddr).AddrPort()
 
 	var wg2 sync.WaitGroup
-	wg2.Add(1)
-	go func() {
-		defer wg2.Done()
+	wg2.Go(func() {
 		call(addrPort, sshPubKey)
-	}()
+	})
 
 	tcpConn, err := tcp.AcceptTCP()
 	if err != nil {
@@ -205,15 +203,11 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 	}
 
 	// The incoming Request channel must be serviced.
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		ssh.DiscardRequests(reqs)
-		wg.Done()
-	}()
+	})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		// Service the incoming channel.
 		for newChannel := range chans {
@@ -326,7 +320,7 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 				channel.SendRequest("exit-status", false, binary.BigEndian.AppendUint32(nil, 0))
 			}()
 		}
-	}()
+	})
 
 	wg2.Wait()
 

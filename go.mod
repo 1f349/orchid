@@ -1,6 +1,6 @@
 module github.com/1f349/orchid
 
-go 1.24.2
+go 1.26
 
 require (
 	github.com/1f349/cache v0.0.7

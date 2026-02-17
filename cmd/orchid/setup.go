@@ -175,7 +175,7 @@ func runSetup(wd string) error {
 	return nil
 }
 
-func listenAddressValidator(ans interface{}) error {
+func listenAddressValidator(ans any) error {
 	if ansStr, ok := ans.(string); ok {
 		// empty string means disable
 		if ansStr == "" {
@@ -189,7 +189,7 @@ func listenAddressValidator(ans interface{}) error {
 	return nil
 }
 
-func urlValidator(ans interface{}) error {
+func urlValidator(ans any) error {
 	if ansStr, ok := ans.(string); ok {
 		_, err := url.Parse(ansStr)
 		return err
