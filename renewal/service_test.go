@@ -84,6 +84,8 @@ func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
 	command.Dir = pebbleTmp
 
 	if command.Start() != nil {
+		_ = command.Wait()
+
 		Logger.Info("Installing pebble")
 		instCmd := exec.Command("go", "install", "github.com/letsencrypt/pebble/cmd/pebble@latest")
 		assert.NoError(tb, instCmd.Run(), "Failed to start pebble make sure it is installed... go install github.com/letsencrypt/pebble/cmd/pebble@latest")
@@ -94,6 +96,7 @@ func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
 		fmt.Println("Killing pebble")
 		if command != nil && command.Process != nil {
 			assert.NoError(tb, command.Process.Kill())
+			_ = command.Wait()
 		}
 		dnsServer.Shutdown()
 		assert.NoError(tb, os.RemoveAll(pebbleTmp))
