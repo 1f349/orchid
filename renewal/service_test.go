@@ -19,7 +19,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mrmelon54/certgen"
 	"github.com/stretchr/testify/assert"
-	"go/build"
 	"math/big"
 	"net"
 	"os"
@@ -78,17 +77,11 @@ func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
 	go dnsServer.Start()
 	testDnsOptions = dnsServer
 
-	pebbleFile := filepath.Join(build.Default.GOPATH, "bin", "pebble")
-	command := exec.Command(pebbleFile, "-config", filepath.Join(pebbleTmp, "pebble-config.json"), "-dnsserver", "127.0.0.34:5053")
+	command := exec.Command("go", "tool", "pebble", "-config", filepath.Join(pebbleTmp, "pebble-config.json"), "-dnsserver", "127.0.0.34:5053")
 	command.Env = append(command.Env, "PEBBLE_VA_ALWAYS_VALID=1")
 	command.Dir = pebbleTmp
 
-	if command.Start() != nil {
-		Logger.Info("Installing pebble")
-		instCmd := exec.Command("go", "install", "github.com/letsencrypt/pebble/cmd/pebble@latest")
-		assert.NoError(tb, instCmd.Run(), "Failed to start pebble make sure it is installed... go install github.com/letsencrypt/pebble/cmd/pebble@latest")
-		assert.NoError(tb, command.Start(), "failed to start pebble again")
-	}
+	assert.NoError(tb, command.Start())
 
 	return serverTls, func() {
 		fmt.Println("Killing pebble")
