@@ -14,6 +14,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	exitReload "github.com/mrmelon54/exit-reload"
 	"gopkg.in/yaml.v3"
+	"net"
 	"os"
 	"path/filepath"
 	"sync"
@@ -103,7 +104,11 @@ func runDaemon(wd string, conf startUpConfig) {
 	}
 	srv := servers.NewApiServer(conf.Listen, db, mJwtVerify, conf.Domains)
 	logger.Logger.Info("Starting API server", "listen", srv.Addr)
-	go utils.RunBackgroundHttp(logger.Logger, srv)
+	lnSrv, err := net.Listen("tcp", conf.Listen)
+	if err != nil {
+		logger.Logger.Fatal("Failed to start API server", "err", err)
+	}
+	go utils.RunBackgroundHttp(logger.Logger, srv, lnSrv)
 
 	exitReload.ExitReload("Violet", func() {}, func() {
 		// stop renewal service and api server
