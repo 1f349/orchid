@@ -80,6 +80,8 @@ func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
 	command := exec.Command("go", "tool", "pebble", "-config", filepath.Join(pebbleTmp, "pebble-config.json"), "-dnsserver", "127.0.0.34:5053")
 	command.Env = append(command.Env, "PEBBLE_VA_ALWAYS_VALID=1")
 	command.Dir = pebbleTmp
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
 
 	assert.NoError(tb, command.Start())
 
