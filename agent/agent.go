@@ -10,6 +10,7 @@ import (
 	"github.com/gobuffalo/nulls"
 	"golang.org/x/crypto/ssh"
 	"os"
+	"path"
 	"path/filepath"
 	"sync"
 	"time"
@@ -220,11 +221,12 @@ func (a *Agent) copySingleCertPair(scpClient *scp.Client, row database.FindAgent
 	defer openKey.Close()
 
 	// copy cert and key to agent
-	err = scpClient.CopyFromFile(context.Background(), *openCert, filepath.Join(row.Dir, "certificates", certName), "0600")
+	// use path rather than filepath here as scpClient unfortunately uses path.Base rather than filepath.Base
+	err = scpClient.CopyFromFile(context.Background(), *openCert, path.Join(row.Dir, "certificates", certName), "0600")
 	if err != nil {
 		return fmt.Errorf("copy cert file: %w", err)
 	}
-	err = scpClient.CopyFromFile(context.Background(), *openKey, filepath.Join(row.Dir, "keys", keyName), "0600")
+	err = scpClient.CopyFromFile(context.Background(), *openKey, path.Join(row.Dir, "keys", keyName), "0600")
 	if err != nil {
 		return fmt.Errorf("copy cert file: %w", err)
 	}
