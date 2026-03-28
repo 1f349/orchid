@@ -44,10 +44,10 @@ require (
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
-	github.com/jmhodges/clock v0.0.0-20160418191101-880ee4c33548 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/letsencrypt/pebble v1.0.1 // indirect
+	github.com/letsencrypt/challtestsrv v1.4.2 // indirect
+	github.com/letsencrypt/pebble/v2 v2.10.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -67,7 +67,6 @@ require (
 	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/tools v0.42.0 // indirect
-	gopkg.in/square/go-jose.v2 v2.1.9 // indirect
 )
 
-tool github.com/letsencrypt/pebble/cmd/pebble
+tool github.com/letsencrypt/pebble/v2/cmd/pebble
