@@ -87,8 +87,8 @@ func setupPebbleSuite(tb testing.TB) (*certgen.CertGen, func()) {
 		_ = command.Wait()
 
 		Logger.Info("Installing pebble")
-		instCmd := exec.Command("go", "install", "github.com/letsencrypt/pebble/cmd/pebble@latest")
-		assert.NoError(tb, instCmd.Run(), "Failed to start pebble make sure it is installed... go install github.com/letsencrypt/pebble/cmd/pebble@latest")
+		instCmd := exec.Command("go", "install", "github.com/letsencrypt/pebble/v2/cmd/pebble@latest")
+		assert.NoError(tb, instCmd.Run(), "Failed to start pebble make sure it is installed... go install github.com/letsencrypt/pebble/v2/cmd/pebble@latest")
 
 		command = exec.Command(pebbleFile, "-config", filepath.Join(pebbleTmp, "pebble-config.json"), "-dnsserver", "127.0.0.34:5053")
 		command.Env = append(command.Env, "PEBBLE_VA_ALWAYS_VALID=1")
