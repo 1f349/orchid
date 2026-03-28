@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/logger"
-	"github.com/1f349/orchid/test"
 	"github.com/charmbracelet/log"
 	"github.com/gobuffalo/nulls"
 	"github.com/mrmelon54/certgen"
@@ -23,6 +22,7 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -80,7 +80,11 @@ func TestAgentSyncing(t *testing.T) {
 				CertNotAfter: nulls.NewTime(now),
 			})
 			assert.Contains(t, err.Error(), "open cert file:")
-			assert.Contains(t, err.Error(), test.PathErrorMessageStringComponent)
+			if runtime.GOOS == "windows" {
+				assert.Contains(t, err.Error(), "system cannot find the file specified")
+			} else {
+				assert.Contains(t, err.Error(), "no such file or directory")
+			}
 		})
 
 		// generate example certificate
@@ -113,7 +117,11 @@ func TestAgentSyncing(t *testing.T) {
 				CertNotAfter: nulls.NewTime(now),
 			})
 			assert.Contains(t, err.Error(), "open key file:")
-			assert.Contains(t, err.Error(), test.PathErrorMessageStringComponent)
+			if runtime.GOOS == "windows" {
+				assert.Contains(t, err.Error(), "system cannot find the file specified")
+			} else {
+				assert.Contains(t, err.Error(), "no such file or directory")
+			}
 		})
 
 		err = os.WriteFile(filepath.Join(keyDir, "420.key.pem"), tlsCert.GetKeyPem(), 0600)
