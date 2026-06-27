@@ -188,7 +188,7 @@ func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, r
 		}
 	}
 
-	reloadOutput, err := sshSession.CombinedOutput(fmt.Sprintf("sudo '%s'", filepath.Join("~", agent.dir, "protected-bin", "reload")))
+	reloadOutput, err := sshSession.CombinedOutput(fmt.Sprintf("sudo '%s'", filepath.Join("/home", agent.user, agent.dir, "protected-bin", "reload")))
 	if err != nil {
 		Logger.Warn("Agent failed to reload services", "agent", agent.agentId, "err", err, "output", string(reloadOutput))
 		hadError = true
