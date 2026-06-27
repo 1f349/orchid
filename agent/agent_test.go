@@ -103,7 +103,7 @@ func TestAgentSyncing(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		err = os.WriteFile(filepath.Join(certDir, "420.cert.pem"), tlsCert.GetCertPem(), 0600)
+		err = os.WriteFile(filepath.Join(certDir, "420-example.test.crt"), tlsCert.GetCertPem(), 0600)
 		assert.NoError(t, err)
 
 		t.Run("missing key file", func(t *testing.T) {
@@ -115,6 +115,7 @@ func TestAgentSyncing(t *testing.T) {
 				Fingerprint:  "",
 				CertID:       420,
 				CertNotAfter: nulls.NewTime(now),
+				CommonName:   "example.test",
 			})
 			assert.Contains(t, err.Error(), "open key file:")
 			if runtime.GOOS == "windows" {
@@ -124,7 +125,7 @@ func TestAgentSyncing(t *testing.T) {
 			}
 		})
 
-		err = os.WriteFile(filepath.Join(keyDir, "420.key.pem"), tlsCert.GetKeyPem(), 0600)
+		err = os.WriteFile(filepath.Join(keyDir, "420-example.test.key"), tlsCert.GetKeyPem(), 0600)
 		assert.NoError(t, err)
 
 		t.Run("successful sync", func(t *testing.T) {
@@ -148,6 +149,7 @@ func TestAgentSyncing(t *testing.T) {
 						Fingerprint:  fingerprintStr,
 						CertID:       420,
 						CertNotAfter: nulls.NewTime(now),
+						CommonName:   "example.test",
 					},
 				})
 				assert.NoError(t, err)
@@ -306,7 +308,7 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 					panic(fmt.Errorf("invalid file name (expected \"%s\" from full path \"%s\" but got \"%s\")", filepath.Base(*fullFilePath), *fullFilePath, fileName))
 				}
 
-				if fileName != "420.cert.pem" && fileName != "420.key.pem" {
+				if fileName != "420-example.test.crt" && fileName != "420-example.test.key" {
 					panic("invalid file name")
 				}
 

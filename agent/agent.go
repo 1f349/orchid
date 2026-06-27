@@ -201,8 +201,8 @@ func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, r
 }
 
 func (a *Agent) copySingleCertPair(scpClient *scp.Client, row database.FindAgentToSyncRow) error {
-	certName := utils.GetCertFileName(row.CertID)
-	keyName := utils.GetKeyFileName(row.CertID)
+	certName := utils.GetCertFileName(row.CertID, row.CommonName)
+	keyName := utils.GetKeyFileName(row.CertID, row.CommonName)
 
 	certPath := filepath.Join(a.certDir, certName)
 	keyPath := filepath.Join(a.keyDir, keyName)

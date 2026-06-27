@@ -1,5 +1,12 @@
 -- name: FindAgentToSync :many
-SELECT agents.id as agent_id, agents.address, agents.user, agents.dir, agents.fingerprint, cert.id as cert_id, cert.not_after as cert_not_after
+SELECT agents.id      as agent_id,
+       agents.address,
+       agents.user,
+       agents.dir,
+       agents.fingerprint,
+       cert.id        as cert_id,
+       cert.not_after as cert_not_after,
+       cert.common_name
 FROM agents
          INNER JOIN agent_certs
                     ON agent_certs.agent_id = agents.id

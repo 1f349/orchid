@@ -194,7 +194,7 @@ func TestPebbleRenewal(t *testing.T) {
 			}
 
 			assert.NoError(t, service.renewalCheck())
-			certFilePath := filepath.Join(service.certDir, "1.cert.pem")
+			certFilePath := filepath.Join(service.certDir, fmt.Sprintf("1-%s.crt", i.domains[0]))
 			certFileRaw, err := os.ReadFile(certFilePath)
 			assert.NoError(t, err)
 

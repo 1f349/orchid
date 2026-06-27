@@ -364,8 +364,8 @@ func (s *Service) setupLegoClient() (*lego.Client, error) {
 
 // getPrivateKey reads the private key for the specified certificate id, or
 // generates one is the file doesn't exist
-func (s *Service) getPrivateKey(id int64) (*rsa.PrivateKey, error) {
-	fPath := filepath.Join(s.keyDir, utils.GetKeyFileName(id))
+func (s *Service) getPrivateKey(local *localCertData) (*rsa.PrivateKey, error) {
+	fPath := filepath.Join(s.keyDir, utils.GetKeyFileName(local.id, local.commonName))
 	pemBytes, err := os.ReadFile(fPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -427,7 +427,7 @@ func (s *Service) renewCert(localData *localCertData) error {
 	}
 
 	// write out the certificate file
-	err = s.writeCertFile(localData.id, certBytes)
+	err = s.writeCertFile(localData, certBytes)
 	if err != nil {
 		return fmt.Errorf("failed to write cert file: %w", err)
 	}
@@ -440,7 +440,7 @@ func (s *Service) renewCert(localData *localCertData) error {
 // certificate, decoding and parsing the certificate.
 func (s *Service) renewCertInternal(localData *localCertData) (*x509.Certificate, []byte, error) {
 	// read private key file
-	privKey, err := s.getPrivateKey(localData.id)
+	privKey, err := s.getPrivateKey(localData)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to open private key: %w", err)
 	}
@@ -513,9 +513,9 @@ func (s *Service) setRetry(id int64) {
 
 // writeCertFile writes the output certificate file and renames the current one
 // to include `-old` in the name.
-func (s *Service) writeCertFile(id int64, certBytes []byte) error {
-	oldPath := filepath.Join(s.certDir, utils.GetOldCertFileName(id))
-	newPath := filepath.Join(s.certDir, utils.GetCertFileName(id))
+func (s *Service) writeCertFile(local *localCertData, certBytes []byte) error {
+	oldPath := filepath.Join(s.certDir, utils.GetOldCertFileName(local.id, local.commonName))
+	newPath := filepath.Join(s.certDir, utils.GetCertFileName(local.id, local.commonName))
 
 	// move certificate file to old name
 	err := os.Rename(newPath, oldPath)
