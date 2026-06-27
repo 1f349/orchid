@@ -109,6 +109,7 @@ type syncAgent struct {
 	agentId     int64
 	address     string
 	user        string
+	dir         string
 	fingerprint string
 }
 
@@ -120,6 +121,7 @@ func (a *Agent) syncCertPairs(startTime time.Time, rows []database.FindAgentToSy
 			agentId:     row.AgentID,
 			address:     row.Address,
 			user:        row.User,
+			dir:         row.Dir,
 			fingerprint: row.Fingerprint,
 		}
 		agentMap[a] = append(agentMap[a], row)
@@ -160,6 +162,11 @@ func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, r
 		return fmt.Errorf("ssh dial: %w", err)
 	}
 
+	sshSession, err := client.NewSession()
+	if err != nil {
+		return fmt.Errorf("ssh session: %w", err)
+	}
+
 	scpClient, err := scp.NewClientBySSH(client)
 	if err != nil {
 		return fmt.Errorf("scp client: %w", err)
@@ -179,6 +186,12 @@ func (a *Agent) syncSingleAgentCertPairs(startTime time.Time, agent syncAgent, r
 			hadError = true
 			continue
 		}
+	}
+
+	reloadOutput, err := sshSession.CombinedOutput(fmt.Sprintf("sudo '%s'", filepath.Join(agent.dir, "protected-bin", "reload")))
+	if err != nil {
+		Logger.Warn("Agent failed to reload services", "agent", agent.agentId, "err", err, "output", string(reloadOutput))
+		hadError = true
 	}
 
 	// The agent last sync will only update if all scp copies were successful.
