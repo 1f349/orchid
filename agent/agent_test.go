@@ -258,6 +258,14 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 						// Skip the sudo calls
 						const sudoStartStr = "sudo '"
 						if strings.HasPrefix(cmd, sudoStartStr) {
+							if !strings.HasSuffix(cmd, "'") {
+								panic("invalid end")
+							}
+							cmdPath := cmd[len(sudoStartStr) : len(cmd)-1]
+							fmt.Println("Running command: sudo", cmdPath)
+							if cmdPath != "/home/test/protected-bin/reload" {
+								panic("invalid reload command called")
+							}
 							continue
 						}
 
