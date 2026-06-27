@@ -254,6 +254,14 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 							panic(fmt.Errorf("invalid exec payload (expected %d but got %d)", length, len(req.Payload)))
 						}
 						cmd := string(req.Payload[4:])
+
+						// Skip the sudo calls
+						const sudoStartStr = "sudo '"
+						if strings.HasPrefix(cmd, sudoStartStr) {
+							continue
+						}
+
+						// Find scp calls
 						const scpStartStr = "scp -qt \""
 						if !strings.HasPrefix(cmd, scpStartStr) {
 							panic("invalid start")
@@ -277,7 +285,12 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 				}()
 
 				var b [1024]byte
-				read := must(channel.Read(b[:]))
+				read, err := channel.Read(b[:])
+				if errors.Is(err, io.EOF) {
+					// Ignore EOF
+					return
+				}
+				read = must(read, err)
 				if read < 1 {
 					panic("invalid read")
 				}
@@ -315,7 +328,7 @@ func setupFakeSSH(wg *sync.WaitGroup, call func(addrPort netip.AddrPort, pubKey 
 				channel.Write([]byte{0})
 
 				buf := new(bytes.Buffer)
-				_, err := io.CopyN(buf, channel, int64(fileSize))
+				_, err = io.CopyN(buf, channel, int64(fileSize))
 				if err != nil {
 					panic("Failed to copy channel")
 				}
