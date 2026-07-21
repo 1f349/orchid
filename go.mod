@@ -6,9 +6,9 @@ require (
 	github.com/1f349/cache v0.0.8
 	github.com/1f349/mjwt v0.4.2
 	github.com/1f349/verbena v0.0.5
-	github.com/1f349/violet v0.0.16
+	github.com/1f349/violet v0.0.17
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/bramvdbogaerde/go-scp v1.6.0
+	github.com/bramvdbogaerde/go-scp v1.6.1
 	github.com/charmbracelet/log v1.0.0
 	github.com/go-acme/lego/v4 v4.35.2
 	github.com/gobuffalo/nulls v0.4.2
@@ -49,7 +49,7 @@ require (
 	github.com/letsencrypt/pebble/v2 v2.10.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
-	github.com/mattn/go-isatty v0.0.22 // indirect
+	github.com/mattn/go-isatty v0.0.23 // indirect
 	github.com/mattn/go-runewidth v0.0.24 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
@@ -59,7 +59,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597 // indirect
+	golang.org/x/exp v0.0.0-20260718201538-764159d718ef // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
