@@ -128,27 +128,33 @@ func (q *Queries) CheckCertOwner(ctx context.Context, arg CheckCertOwnerParams) 
 }
 
 const findNextCert = `-- name: FindNextCert :one
-SELECT cert.id, cert.not_after, cert.common_name
+SELECT cert.id, cert.not_after, cert.renew_at, cert.common_name
 FROM certificates AS cert
 WHERE cert.active = 1
-  AND (cert.auto_renew = 1 OR cert.not_after IS NULL)
+  AND (cert.auto_renew = 1 OR cert.renew_at IS NULL)
   AND cert.renewing = 0
   AND (cert.renew_retry IS NULL OR DATETIME() > DATETIME(cert.renew_retry))
-  AND (cert.not_after IS NULL OR DATETIME(cert.not_after, 'utc', '-30 days') < DATETIME())
-ORDER BY cert.not_after DESC NULLS FIRST
+  AND (cert.renew_at IS NULL OR DATETIME() > DATETIME(cert.renew_at))
+ORDER BY cert.renew_at DESC NULLS FIRST
 LIMIT 1
 `
 
 type FindNextCertRow struct {
 	ID         int64      `json:"id"`
 	NotAfter   nulls.Time `json:"not_after"`
+	RenewAt    nulls.Time `json:"renew_at"`
 	CommonName string     `json:"common_name"`
 }
 
 func (q *Queries) FindNextCert(ctx context.Context) (FindNextCertRow, error) {
 	row := q.db.QueryRowContext(ctx, findNextCert)
 	var i FindNextCertRow
-	err := row.Scan(&i.ID, &i.NotAfter, &i.CommonName)
+	err := row.Scan(
+		&i.ID,
+		&i.NotAfter,
+		&i.RenewAt,
+		&i.CommonName,
+	)
 	return i, err
 }
 
@@ -275,7 +281,8 @@ func (q *Queries) SetRetryFlag(ctx context.Context, id int64) error {
 const triggerManualRenew = `-- name: TriggerManualRenew :exec
 UPDATE certificates
 SET renew_retry = DATETIME('now'),
-    not_after   = NULL
+    not_after   = NULL,
+    renew_at    = NULL
 WHERE id = ?
 `
 
@@ -289,18 +296,25 @@ UPDATE certificates
 SET renewing    = 0,
     renew_retry = NULL,
     not_after   = ?,
-    updated_at  = ?
+    updated_at  = ?,
+    renew_at    = ?
 WHERE id = ?
 `
 
 type UpdateCertAfterRenewalParams struct {
 	NotAfter  nulls.Time `json:"not_after"`
 	UpdatedAt time.Time  `json:"updated_at"`
+	RenewAt   nulls.Time `json:"renew_at"`
 	ID        int64      `json:"id"`
 }
 
 func (q *Queries) UpdateCertAfterRenewal(ctx context.Context, arg UpdateCertAfterRenewalParams) error {
-	_, err := q.db.ExecContext(ctx, updateCertAfterRenewal, arg.NotAfter, arg.UpdatedAt, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateCertAfterRenewal,
+		arg.NotAfter,
+		arg.UpdatedAt,
+		arg.RenewAt,
+		arg.ID,
+	)
 	return err
 }
 

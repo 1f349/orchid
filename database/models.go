@@ -46,6 +46,7 @@ type Certificate struct {
 	Province         string          `json:"province"`
 	DetailsUpdatedAt interface{}     `json:"details_updated_at"`
 	Name             string          `json:"name"`
+	RenewAt          nulls.Time      `json:"renew_at"`
 }
 
 type CertificateDomain struct {

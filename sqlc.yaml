@@ -21,3 +21,5 @@ sql:
             go_type: github.com/gobuffalo/nulls.Int64
           - column: certificates.authority
             go_type: github.com/1f349/orchid/database/types.Authority
+          - column: certificates.renew_at
+            go_type: github.com/gobuffalo/nulls.Time

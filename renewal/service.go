@@ -15,6 +15,7 @@ import (
 	"github.com/1f349/orchid/pebble"
 	"github.com/1f349/orchid/providers/joint"
 	"github.com/1f349/orchid/utils"
+	"github.com/go-acme/lego/v5/acme/api"
 	"github.com/go-acme/lego/v5/certificate"
 	"github.com/go-acme/lego/v5/challenge"
 	"github.com/go-acme/lego/v5/challenge/dns01"
@@ -66,6 +67,7 @@ type Service struct {
 	client     *lego.Client
 
 	dnsProvider challenge.Provider
+	certProfile string
 }
 
 // NewService creates a new certificate renewal service.
@@ -298,7 +300,6 @@ func (s *Service) findNextCertificateToRenew() (*localCertData, error) {
 	}
 
 	d.id = row.ID
-	d.notAfter = row.NotAfter.Time
 	d.commonName = row.CommonName
 
 	return d, nil
@@ -406,10 +407,28 @@ func (s *Service) renewCert(localData *localCertData) error {
 		return fmt.Errorf("failed to renew cert %d: %w", localData.id, err)
 	}
 
+	// calculate the renewal window
+	renewalInfo, err := s.client.Certificate.GetRenewalInfo(context.TODO(), cert)
+	switch {
+	case errors.Is(err, api.ErrNoARI):
+		renewalInfo = &certificate.RenewalInfo{}
+	case err != nil:
+		return err
+	}
+
+	const WillingToSleep = time.Hour * 24 * 365
+	const ThirtyDays = time.Hour * 24 * 30
+
+	renewalTime := renewalInfo.ShouldRenewAt(time.Now(), WillingToSleep)
+	if renewalTime == nil {
+		renewalTime = new(time.Now().Add(-ThirtyDays))
+	}
+
 	// set the NotAfter/NotBefore in the database
 	err = s.db.UpdateCertAfterRenewal(context.Background(), database.UpdateCertAfterRenewalParams{
 		NotAfter:  nulls.NewTime(cert.NotAfter),
 		UpdatedAt: cert.NotBefore,
+		RenewAt:   nulls.NewTime(*renewalTime),
 		ID:        localData.id,
 	})
 	if err != nil {
@@ -471,6 +490,7 @@ func (s *Service) renewCertInternal(localData *localCertData) (*x509.Certificate
 		Domains:    domains,
 		PrivateKey: privKey,
 		Bundle:     true,
+		Profile:    s.certProfile,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to obtain replacement certificate: %w", err)

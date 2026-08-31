@@ -1,12 +1,12 @@
 -- name: FindNextCert :one
-SELECT cert.id, cert.not_after, cert.common_name
+SELECT cert.id, cert.not_after, cert.renew_at, cert.common_name
 FROM certificates AS cert
 WHERE cert.active = 1
-  AND (cert.auto_renew = 1 OR cert.not_after IS NULL)
+  AND (cert.auto_renew = 1 OR cert.renew_at IS NULL)
   AND cert.renewing = 0
   AND (cert.renew_retry IS NULL OR DATETIME() > DATETIME(cert.renew_retry))
-  AND (cert.not_after IS NULL OR DATETIME(cert.not_after, 'utc', '-30 days') < DATETIME())
-ORDER BY cert.not_after DESC NULLS FIRST
+  AND (cert.renew_at IS NULL OR DATETIME() > DATETIME(cert.renew_at))
+ORDER BY cert.renew_at DESC NULLS FIRST
 LIMIT 1;
 
 -- name: FindOwnedCerts :many
@@ -40,7 +40,8 @@ WHERE id = ?;
 -- name: TriggerManualRenew :exec
 UPDATE certificates
 SET renew_retry = DATETIME('now'),
-    not_after   = NULL
+    not_after   = NULL,
+    renew_at    = NULL
 WHERE id = ?;
 
 -- name: SetRetryFlag :exec
@@ -53,7 +54,8 @@ UPDATE certificates
 SET renewing    = 0,
     renew_retry = NULL,
     not_after   = ?,
-    updated_at  = ?
+    updated_at  = ?,
+    renew_at    = ?
 WHERE id = ?;
 
 -- name: AddCertificate :execlastid

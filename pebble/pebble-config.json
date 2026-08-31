@@ -14,6 +14,14 @@
         "retryAfter": {
             "authz": 3,
             "order": 5
+        },
+        "profiles": {
+            "default": {
+                "validityPeriod": 7776000
+            },
+            "short": {
+                "validityPeriod": 1296000
+            }
         }
     }
 }

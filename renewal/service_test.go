@@ -15,6 +15,7 @@ import (
 	"github.com/1f349/orchid/pebble"
 	"github.com/1f349/orchid/test"
 	"github.com/go-acme/lego/v5/lego"
+	"github.com/gobuffalo/nulls"
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mrmelon54/certgen"
@@ -161,14 +162,21 @@ func TestPebbleRenewal(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
+	const oneDay = 24 * time.Hour
+
 	tests := []struct {
 		name    string
 		domains []string
+		dur     time.Duration
+		short   bool
 	}{
-		{"Test", []string{"hello.example.test"}},
-		{"Test with multiple certificates", []string{"example.test", "world.example.test"}},
-		{"Test with wildcard certificate", []string{"example.test", "*.example.test"}},
+		{"Test", []string{"hello.example.test"}, 90 * oneDay, false},
+		{"Test with multiple certificates", []string{"example.test", "world.example.test"}, 90 * oneDay, false},
+		{"Test with wildcard certificate", []string{"example.test", "*.example.test"}, 90 * oneDay, false},
+		{"Test with wildcard certificate and short validity", []string{"example2.test", "*.example2.test"}, 15 * oneDay, true},
 	}
+
+	n := time.Now()
 
 	for _, i := range tests {
 		t.Run(i.name, func(t *testing.T) {
@@ -178,7 +186,13 @@ func TestPebbleRenewal(t *testing.T) {
 			_, err := db2.Exec("DELETE FROM certificate_domains")
 			assert.NoError(t, err)
 
-			_, err = db2.Exec(`INSERT INTO certificates (dns, auto_renew, active, renewing, renew_retry, not_after, updated_at, common_name) VALUES (1, 1, 1, 0, '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00', ?);`, i.domains[0])
+			if i.short {
+				service.certProfile = "short"
+			} else {
+				service.certProfile = "default"
+			}
+
+			_, err = db2.Exec(`INSERT INTO certificates (dns, auto_renew, active, renewing, renew_retry, not_after, updated_at, common_name, renew_at) VALUES (1, 1, 1, 0, '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00', '2000-01-01 00:00:00+00:00', ?, ?);`, i.domains[0], n.Add(-time.Hour))
 			assert.NoError(t, err)
 			for _, j := range i.domains {
 				_, err = db2.Exec(`INSERT INTO certificate_domains (cert_id, domain) VALUES (1, ?)`, j)
@@ -209,6 +223,33 @@ func TestPebbleRenewal(t *testing.T) {
 			sort.Strings(i.domains)
 			sort.Strings(outCert.DNSNames)
 			assert.Equal(t, i.domains, outCert.DNSNames)
+
+			fmt.Println("not before:", outCert.NotBefore)
+			fmt.Println("not after:", outCert.NotAfter)
+
+			// Validate the cert duration is within an hour of the expected duration
+			dur := outCert.NotAfter.Sub(outCert.NotBefore)
+			fmt.Printf("cert duration: %v (%v days)\n", dur, dur.Hours()/24)
+			assert.True(t, dur > (i.dur-time.Hour) && dur < (i.dur+time.Hour))
+
+			query2, err := db2.Query("SELECT id, renew_at from certificates")
+			assert.NoError(t, err)
+			for query2.Next() {
+				var a uint64
+				var b nulls.Time
+				assert.NoError(t, query2.Scan(&a, &b))
+
+				assert.True(t, b.Valid, "time must be valid")
+
+				renewStart := outCert.NotAfter.Add(-(dur / 3)).Add(-(dur / 15))
+				renewEnd := outCert.NotAfter
+				assert.True(t, b.Time.After(renewStart), "renew time %v should be after %v", b.Time, renewStart)
+				assert.True(t, b.Time.Before(renewEnd), "renew time %v should be before %v", b.Time, renewEnd)
+
+				fmt.Println("renew:", b.Time)
+				fmt.Println("start:", renewStart)
+				fmt.Println("end:", renewEnd)
+			}
 		})
 	}
 }
