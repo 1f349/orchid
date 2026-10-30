@@ -1,10 +1,11 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"github.com/1f349/orchid/logger"
-	"github.com/go-acme/lego/v4/challenge"
-	"github.com/go-acme/lego/v4/challenge/dns01"
+	"github.com/go-acme/lego/v5/challenge"
+	"github.com/go-acme/lego/v5/challenge/dns01"
 	"github.com/miekg/dns"
 	"strings"
 )
@@ -44,14 +45,14 @@ func (f *fakeDnsProv) AddRecursiveSOA(fqdn string) {
 	}
 }
 
-func (f *fakeDnsProv) Present(domain, _, keyAuth string) error {
-	info := dns01.GetChallengeInfo(domain, keyAuth)
+func (f *fakeDnsProv) Present(ctx context.Context, domain, _, keyAuth string) error {
+	info := dns01.GetChallengeInfo(ctx, domain, keyAuth)
 	f.mTxt[info.EffectiveFQDN] = info.Value
 	logger.Logger.Infof("fakeDnsProv.Present(%s TXT %s)", info.EffectiveFQDN, info.Value)
 	return nil
 }
-func (f *fakeDnsProv) CleanUp(domain, _, keyAuth string) error {
-	info := dns01.GetChallengeInfo(domain, keyAuth)
+func (f *fakeDnsProv) CleanUp(ctx context.Context, domain, _, keyAuth string) error {
+	info := dns01.GetChallengeInfo(ctx, domain, keyAuth)
 	delete(f.mTxt, info.EffectiveFQDN)
 	logger.Logger.Infof("fakeDnsProv.CleanUp(%s TXT %s)", info.EffectiveFQDN, info.Value)
 	return nil

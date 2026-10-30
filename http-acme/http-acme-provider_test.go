@@ -1,10 +1,11 @@
 package http_acme
 
 import (
+	"context"
 	"fmt"
 	"github.com/1f349/mjwt"
 	"github.com/1f349/mjwt/auth"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -72,7 +73,7 @@ func TestHttpAcmeProvider_Present(t *testing.T) {
 
 	ft := &fakeTransport{verify: signer.KeyStore()}
 	prov := makeQuickHttpProv(accessToken, ft)
-	assert.NoError(t, prov.Present("example.com", "1234", "1234abcd"))
+	assert.NoError(t, prov.Present(context.TODO(), "example.com", "1234", "1234abcd"))
 	assert.Equal(t, *ft.req.URL, url.URL{
 		Scheme: "https",
 		Host:   "api.example.com",
@@ -93,7 +94,7 @@ func TestHttpAcmeProvider_CleanUp(t *testing.T) {
 
 	ft := &fakeTransport{verify: signer.KeyStore(), clean: true}
 	prov := makeQuickHttpProv(accessToken, ft)
-	assert.NoError(t, prov.CleanUp("example.com", "1234", "1234abcd"))
+	assert.NoError(t, prov.CleanUp(context.TODO(), "example.com", "1234", "1234abcd"))
 	assert.Equal(t, *ft.req.URL, url.URL{
 		Scheme: "https",
 		Host:   "api.example.com",

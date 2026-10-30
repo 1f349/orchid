@@ -7,10 +7,10 @@ import (
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/logger"
 	"github.com/1f349/orchid/providers/verbena"
-	"github.com/go-acme/lego/v4/challenge"
-	"github.com/go-acme/lego/v4/challenge/dns01"
-	"github.com/go-acme/lego/v4/providers/dns/duckdns"
-	"github.com/go-acme/lego/v4/providers/dns/namesilo"
+	"github.com/go-acme/lego/v5/challenge"
+	"github.com/go-acme/lego/v5/challenge/dns01"
+	"github.com/go-acme/lego/v5/providers/dns/duckdns"
+	"github.com/go-acme/lego/v5/providers/dns/namesilo"
 	"strings"
 	"time"
 )
@@ -146,21 +146,21 @@ func (d *DNSProvider) ResolveProvider(domain string) (challenge.Provider, error)
 }
 
 // Present creations a TXT record to fulfill the dns-01 challenge.
-func (d *DNSProvider) Present(domain, token, keyAuth string) error {
+func (d *DNSProvider) Present(ctx context.Context, domain, token, keyAuth string) error {
 	provider, err := d.ResolveProvider(domain)
 	if err != nil {
 		return err
 	}
-	return provider.Present(domain, token, keyAuth)
+	return provider.Present(ctx, domain, token, keyAuth)
 }
 
 // CleanUp removes the TXT record to fulfill the dns-01 challenge.
-func (d *DNSProvider) CleanUp(domain, token, keyAuth string) error {
+func (d *DNSProvider) CleanUp(ctx context.Context, domain, token, keyAuth string) error {
 	provider, err := d.ResolveProvider(domain)
 	if err != nil {
 		return err
 	}
-	return provider.CleanUp(domain, token, keyAuth)
+	return provider.CleanUp(ctx, domain, token, keyAuth)
 }
 
 func (d *DNSProvider) Timeout() (timeout, interval time.Duration) {

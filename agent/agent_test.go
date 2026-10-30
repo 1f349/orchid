@@ -3,6 +3,7 @@ package agent
 import (
 	"bufio"
 	"bytes"
+	"charm.land/log/v2"
 	"context"
 	"crypto/x509/pkix"
 	"encoding/binary"
@@ -10,7 +11,6 @@ import (
 	"fmt"
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/logger"
-	"github.com/charmbracelet/log"
 	"github.com/gobuffalo/nulls"
 	"github.com/mrmelon54/certgen"
 	"github.com/stretchr/testify/assert"

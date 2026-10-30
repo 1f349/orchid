@@ -1,10 +1,11 @@
 package test
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/go-acme/lego/v4/challenge"
+	"github.com/go-acme/lego/v5/challenge"
 	"net/http"
 )
 
@@ -24,8 +25,8 @@ func MakeFakeAcmeProv(cert []byte) interface {
 	return &fakeAcmeProv{t: t}
 }
 
-func (f *fakeAcmeProv) Present(string, string, string) error { return nil }
-func (f *fakeAcmeProv) CleanUp(string, string, string) error { return nil }
+func (f *fakeAcmeProv) Present(context.Context, string, string, string) error { return nil }
+func (f *fakeAcmeProv) CleanUp(context.Context, string, string, string) error { return nil }
 func (f *fakeAcmeProv) RoundTrip(req *http.Request) (*http.Response, error) {
 	// use transport with custom CertPool for pebble requests
 	if req.URL.Host == "localhost:14000" {

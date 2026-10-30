@@ -2,17 +2,17 @@ package renewal
 
 import (
 	"crypto"
-	"github.com/go-acme/lego/v4/registration"
+	"github.com/go-acme/lego/v5/acme"
 )
 
 // Account stores the information required for the lego library to use the
 // LetsEncrypt account details.
 type Account struct {
 	email string
-	reg   *registration.Resource
-	key   crypto.PrivateKey
+	reg   *acme.ExtendedAccount
+	key   crypto.Signer
 }
 
-func (a *Account) GetEmail() string                        { return a.email }
-func (a *Account) GetRegistration() *registration.Resource { return a.reg }
-func (a *Account) GetPrivateKey() crypto.PrivateKey        { return a.key }
+func (a *Account) GetEmail() string                       { return a.email }
+func (a *Account) GetRegistration() *acme.ExtendedAccount { return a.reg }
+func (a *Account) GetPrivateKey() crypto.Signer           { return a.key }

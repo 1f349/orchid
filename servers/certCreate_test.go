@@ -8,7 +8,7 @@ import (
 	"github.com/1f349/mjwt/auth"
 	"github.com/1f349/orchid/database"
 	"github.com/1f349/orchid/database/types"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
 	"net/http"

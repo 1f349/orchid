@@ -1,10 +1,11 @@
 package http_acme
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/1f349/orchid/logger"
-	"github.com/go-acme/lego/v4/challenge"
+	"github.com/go-acme/lego/v5/challenge"
 	"gopkg.in/yaml.v3"
 	"net/http"
 	"os"
@@ -48,7 +49,7 @@ func NewHttpAcmeProvider(tokenFile, apiUrlPresent, apiUrlCleanUp, apiUrlRefreshT
 
 // Present implements challenge.Provider and sends a put request to the specified
 // path along with a bearer token to authenticate
-func (h *HttpAcmeProvider) Present(domain, token, keyAuth string) error {
+func (h *HttpAcmeProvider) Present(ctx context.Context, domain, token, keyAuth string) error {
 	// round trip
 	trip, err := h.authCheckRequest(http.MethodPut, h.apiUrlPresent, domain, token, keyAuth)
 	if err != nil {
@@ -62,7 +63,7 @@ func (h *HttpAcmeProvider) Present(domain, token, keyAuth string) error {
 
 // CleanUp implements challenge.Provider and sends a delete request to the
 // specified path along with a bearer token to authenticate
-func (h *HttpAcmeProvider) CleanUp(domain, token, keyAuth string) error {
+func (h *HttpAcmeProvider) CleanUp(ctx context.Context, domain, token, keyAuth string) error {
 	// round trip
 	trip, err := h.authCheckRequest(http.MethodDelete, h.apiUrlCleanUp, domain, token, keyAuth)
 	if err != nil {

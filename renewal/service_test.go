@@ -2,6 +2,7 @@ package renewal
 
 import (
 	"bytes"
+	"charm.land/log/v2"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -13,8 +14,7 @@ import (
 	"github.com/1f349/orchid/logger"
 	"github.com/1f349/orchid/pebble"
 	"github.com/1f349/orchid/test"
-	"github.com/charmbracelet/log"
-	"github.com/go-acme/lego/v4/lego"
+	"github.com/go-acme/lego/v5/lego"
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mrmelon54/certgen"
@@ -36,11 +36,11 @@ const pebbleUrl = "https://localhost:5000"
 func TestService_resolveCADirectory(t *testing.T) {
 	s := &Service{}
 	s.resolveCADirectory("production")
-	assert.Equal(t, lego.LEDirectoryProduction, s.caAddr)
+	assert.Equal(t, lego.DirectoryURLLetsEncrypt, s.caAddr)
 	s.resolveCADirectory("prod")
-	assert.Equal(t, lego.LEDirectoryProduction, s.caAddr)
+	assert.Equal(t, lego.DirectoryURLLetsEncrypt, s.caAddr)
 	s.resolveCADirectory("staging")
-	assert.Equal(t, lego.LEDirectoryStaging, s.caAddr)
+	assert.Equal(t, lego.DirectoryURLLetsEncryptStaging, s.caAddr)
 	s.resolveCADirectory(pebbleUrl)
 	assert.Equal(t, pebbleUrl, s.caAddr)
 }

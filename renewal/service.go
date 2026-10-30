@@ -15,11 +15,11 @@ import (
 	"github.com/1f349/orchid/pebble"
 	"github.com/1f349/orchid/providers/joint"
 	"github.com/1f349/orchid/utils"
-	"github.com/go-acme/lego/v4/certificate"
-	"github.com/go-acme/lego/v4/challenge"
-	"github.com/go-acme/lego/v4/challenge/dns01"
-	"github.com/go-acme/lego/v4/lego"
-	"github.com/go-acme/lego/v4/registration"
+	"github.com/go-acme/lego/v5/certificate"
+	"github.com/go-acme/lego/v5/challenge"
+	"github.com/go-acme/lego/v5/challenge/dns01"
+	"github.com/go-acme/lego/v5/lego"
+	"github.com/go-acme/lego/v5/registration"
 	"github.com/gobuffalo/nulls"
 	"math/rand"
 	"net/http"
@@ -161,9 +161,9 @@ func (s *Service) resolveLEPrivKey(a string) error {
 func (s *Service) resolveCADirectory(dir string) {
 	switch dir {
 	case "production", "prod":
-		s.caAddr = lego.LEDirectoryProduction
+		s.caAddr = lego.DirectoryURLLetsEncrypt
 	case "staging":
-		s.caAddr = lego.LEDirectoryStaging
+		s.caAddr = lego.DirectoryURLLetsEncryptStaging
 	default:
 		s.caAddr = dir
 	}
@@ -342,7 +342,6 @@ func (s *Service) setupLegoClient() (*lego.Client, error) {
 	}
 
 	// create lego client from the config
-	// TODO: use a custom logger via `github.com/go-acme/lego/v4/log.Logger`
 	client, err := lego.NewClient(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate client: %w", err)
@@ -352,7 +351,7 @@ func (s *Service) setupLegoClient() (*lego.Client, error) {
 	_ = client.Challenge.SetHTTP01Provider(s.httpAcme)
 
 	// make sure the LetsEncrypt account is registered
-	register, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
+	register, err := client.Registration.Register(context.TODO(), registration.RegisterOptions{TermsOfServiceAgreed: true})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update account registration: %w", err)
 	}
@@ -459,15 +458,16 @@ func (s *Service) renewCertInternal(localData *localCertData) (*x509.Certificate
 		// set up the dns provider used during tests and disable propagation as no dns
 		// will validate these tests
 		dnsAddr := testDnsOptions.GetDnsAddrs()
-		Logger.Info("Using testDnsOptions with DNS server", "addr", dnsAddr)
-		_ = s.client.Challenge.SetDNS01Provider(testDnsOptions, dns01.AddRecursiveNameservers(dnsAddr), dns01.DisableAuthoritativeNssPropagationRequirement())
+		Logger.Info("Using testDnsOptions with DNS server", "addr", testDnsOptions.GetDnsAddrs())
+		dns01.SetDefaultClient(dns01.NewClient(&dns01.Options{RecursiveNameservers: dnsAddr}))
+		_ = s.client.Challenge.SetDNS01Provider(testDnsOptions, dns01.DisableAuthoritativeNssPropagationRequirement())
 	} else {
 		// use the joint DNS provider to work with all available domains
 		_ = s.client.Challenge.SetDNS01Provider(s.dnsProvider)
 	}
 
 	// obtain new certificate - this call will hang until a certificate is ready
-	obtain, err := s.client.Certificate.Obtain(certificate.ObtainRequest{
+	obtain, err := s.client.Certificate.Obtain(context.TODO(), certificate.ObtainRequest{
 		Domains:    domains,
 		PrivateKey: privKey,
 		Bundle:     true,

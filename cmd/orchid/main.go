@@ -1,6 +1,7 @@
 package main
 
 import (
+	"charm.land/log/v2"
 	"flag"
 	"github.com/1f349/mjwt"
 	"github.com/1f349/orchid"
@@ -10,7 +11,6 @@ import (
 	"github.com/1f349/orchid/renewal"
 	"github.com/1f349/orchid/servers"
 	"github.com/1f349/violet/utils"
-	"github.com/charmbracelet/log"
 	_ "github.com/mattn/go-sqlite3"
 	exitReload "github.com/mrmelon54/exit-reload"
 	"gopkg.in/yaml.v3"
